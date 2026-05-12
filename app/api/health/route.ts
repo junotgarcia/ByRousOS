@@ -1,40 +1,34 @@
+// app/api/health/route.ts
+// GET /api/health
+// Verifica conexion PostgreSQL directa (os.*) con SELECT 1
+
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/server";
 
 export async function GET() {
   const start = Date.now();
 
   try {
-    const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
-      .schema("os")
-      .from("system_config")
-      .select("operational_mode, version")
-      .limit(1)
-      .single();
-
-    if (error) throw error;
+    const sql = getDb();
+    await sql`SELECT 1`;
 
     return NextResponse.json({
       ok: true,
       service: "byrous-os-web",
       time: new Date().toISOString(),
       latency_ms: Date.now() - start,
-      supabase: "connected",
-      system: {
-        operational_mode: data.operational_mode,
-        version: data.version,
-      },
+      database: "connected",
     });
   } catch (err) {
+    console.error("[health] DB error:", err);
     return NextResponse.json(
       {
         ok: false,
         service: "byrous-os-web",
         time: new Date().toISOString(),
         latency_ms: Date.now() - start,
-        supabase: "error",
-        error: err instanceof Error ? err.message : "unknown",
+        database: "error",
+        error: err instanceof Error ? err.message : JSON.stringify(err),
       },
       { status: 503 }
     );

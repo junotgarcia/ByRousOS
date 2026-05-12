@@ -1,63 +1,49 @@
 // app/api/status/route.ts
-// GET /api/status — estado detallado del sistema ByRousOS
-// Lee: system_config, agents (count), system_alerts (critical open), sbr.config (ping)
+// GET /api/status
+// Consulta os.system_config via PostgreSQL directo
 
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/db/server";
 
 export async function GET() {
   const start = Date.now();
 
   try {
-    const supabase = createSupabaseServerClient();
+    const sql = getDb();
 
-    const [systemConfig, agentCount, alertCount, sbrPing] = await Promise.all([
-      supabase
-        .schema("os")
-        .from("system_config")
-        .select("operational_mode, version, maintenance_mode, degraded_mode_active")
-        .limit(1)
-        .single(),
+    const [config] = await sql`
+      SELECT operational_mode, version, maintenance_mode, degraded_mode_active
+      FROM os.system_config
+      LIMIT 1
+    `;
 
-      supabase
-        .schema("os")
-        .from("agents")
-        .select("*", { count: "exact", head: true }),
+    const [{ count: agentCount }] = await sql`
+      SELECT COUNT(*)::int AS count FROM os.agents
+    `;
 
-      supabase
-        .schema("os")
-        .from("system_alerts")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "open")
-        .eq("severity", "CRITICAL"),
-
-      supabase
-        .schema("sbr")
-        .from("config")
-        .select("clave", { count: "exact", head: true }),
-    ]);
-
-    if (systemConfig.error) throw systemConfig.error;
+    const [{ count: alertCount }] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM os.system_alerts
+      WHERE status = 'open' AND severity = 'CRITICAL'
+    `;
 
     return NextResponse.json({
       status: "operational",
       time: new Date().toISOString(),
       latency_ms: Date.now() - start,
-      system: systemConfig.data,
-      agents: { registered: agentCount.count ?? 0 },
-      alerts: { critical_open: alertCount.count ?? 0 },
-      database: {
-        schema_os: "verified",
-        schema_sbr: sbrPing.error ? "error" : "verified",
-      },
+      system: config,
+      agents: { registered: agentCount },
+      alerts: { critical_open: alertCount },
+      database: { schema_os: "verified" },
     });
   } catch (err) {
+    console.error("[status] DB error:", err);
     return NextResponse.json(
       {
         status: "error",
         time: new Date().toISOString(),
         latency_ms: Date.now() - start,
-        error: err instanceof Error ? err.message : "unknown",
+        error: err instanceof Error ? err.message : JSON.stringify(err),
       },
       { status: 503 }
     );
