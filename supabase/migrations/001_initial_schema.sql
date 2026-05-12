@@ -1,26 +1,26 @@
 -- =============================================================================
--- ByRousOS — Migration 001: Initial Schema
+-- ByRousOS - Migration 001: Initial Schema
 -- =============================================================================
--- Versión:      2.0.0
+-- Version:      2.0.0
 -- Fecha:        2026-05-11
--- Descripción:  Schema inicial simplificado de ByRousOS — Minimal Viable Infrastructure.
---               Simplificaciones vs v1: triggers reducidos (18→7), ENUMs reducidos (9→4),
---               RLS simplificado (11→7 políticas), os.agent_metrics diferida a migration 002.
--- Ejecutar en:  Supabase SQL Editor (producción o staging)
--- ADVERTENCIA:  Revisión y aprobación del CEO requerida antes de ejecutar.
+-- Descripcion:  Schema inicial simplificado de ByRousOS - Minimal Viable Infrastructure.
+--               Simplificaciones vs v1: triggers reducidos (18->7), ENUMs reducidos (9->4),
+--               RLS simplificado (11->7 politicas), os.agent_metrics diferida a migration 002.
+-- Ejecutar en:  Supabase SQL Editor (produccion o staging)
+-- ADVERTENCIA:  Revision y aprobacion del CEO requerida antes de ejecutar.
 -- =============================================================================
 --
--- ORDEN DE EJECUCIÓN:
+-- ORDEN DE EJECUCION:
 --   1. Schemas
 --   2. Tipos ENUM
---   3. os.*   — Core OS Tables
---   4. os.*   — Governance & Audit Tables
---   5. os.*   — Execution Runtime Tables
---   6. os.*   — Observability Tables
---   7. sbr.*  — StyledByRous Pilot Business Tables
---   8. Índices
---   9. Row Level Security (básico mínimo)
---  10. Funciones de utilidad (updated_at automático)
+--   3. os.*   - Core OS Tables
+--   4. os.*   - Governance & Audit Tables
+--   5. os.*   - Execution Runtime Tables
+--   6. os.*   - Observability Tables
+--   7. sbr.*  - StyledByRous Pilot Business Tables
+--   8. Indices
+--   9. Row Level Security (basico minimo)
+--  10. Funciones de utilidad (updated_at automatico)
 -- =============================================================================
 
 
@@ -31,23 +31,23 @@
 CREATE SCHEMA IF NOT EXISTS os;
 CREATE SCHEMA IF NOT EXISTS sbr;
 
-COMMENT ON SCHEMA os  IS 'ByRousOS — Sistema operativo: agentes, gobierno, ejecución, observabilidad.';
-COMMENT ON SCHEMA sbr IS 'StyledByRous — Módulo piloto de negocio. Replicable con otro prefijo para otras empresas.';
+COMMENT ON SCHEMA os  IS 'ByRousOS - Sistema operativo: agentes, gobierno, ejecucion, observabilidad.';
+COMMENT ON SCHEMA sbr IS 'StyledByRous - Modulo piloto de negocio. Replicable con otro prefijo para otras empresas.';
 
 
 -- =============================================================================
 -- 1. TIPOS ENUM
 -- =============================================================================
 
--- Niveles de autonomía según Gobierno Fase 0, Sección 5.2
+-- Niveles de autonomia segun Gobierno Fase 0, Seccion 5.2
 CREATE TYPE os.autonomy_level AS ENUM (
-    'A',  -- Rutinario — agente ejecuta solo
-    'B',  -- Mediano — agente ejecuta, CEO notificado, reversible 24h
-    'C',  -- Alto impacto — debate Proponte/Retador → CEO aprueba
-    'D'   -- Irreversible — bloqueado para agentes, solo CEO
+    'A',  -- Rutinario - agente ejecuta solo
+    'B',  -- Mediano - agente ejecuta, CEO notificado, reversible 24h
+    'C',  -- Alto impacto - debate Proponte/Retador -> CEO aprueba
+    'D'   -- Irreversible - bloqueado para agentes, solo CEO
 );
 
--- os.agent_status → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.agent_status -> TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
 
 -- Estado de un job o comando en su ciclo de vida
 CREATE TYPE os.execution_status AS ENUM (
@@ -60,10 +60,10 @@ CREATE TYPE os.execution_status AS ENUM (
     'cancelled'
 );
 
--- os.risk_level     → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
--- os.decision_outcome→ TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
--- os.alert_status   → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
--- os.health_status  → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.risk_level     -> TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.decision_outcome-> TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.alert_status   -> TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.health_status  -> TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
 
 -- Severidad de logs y alertas
 CREATE TYPE os.severity AS ENUM (
@@ -74,7 +74,7 @@ CREATE TYPE os.severity AS ENUM (
     'CRITICAL'
 );
 
--- os.health_status → TEXT + CHECK — ver nota arriba.
+-- os.health_status -> TEXT + CHECK - ver nota arriba.
 
 -- Modo operacional global del sistema
 CREATE TYPE os.operational_mode AS ENUM (
@@ -85,7 +85,7 @@ CREATE TYPE os.operational_mode AS ENUM (
 
 
 -- =============================================================================
--- 2. FUNCIÓN AUXILIAR: updated_at automático
+-- 2. FUNCION AUXILIAR: updated_at automatico
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION os.set_updated_at()
@@ -98,14 +98,14 @@ $$ LANGUAGE plpgsql;
 
 
 -- =============================================================================
--- GRUPO 1 — CORE OS TABLES
--- Qué agentes existen, cómo están configurados, qué está corriendo.
+-- GRUPO 1 - CORE OS TABLES
+-- Que agentes existen, como estan configurados, que esta corriendo.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- os.agents
 -- Registro permanente de todos los agentes del sistema.
--- Un agente es una entidad permanente. Su configuración vive en agent_configs.
+-- Un agente es una entidad permanente. Su configuracion vive en agent_configs.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.agents (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,15 +116,15 @@ CREATE TABLE os.agents (
     max_autonomy    os.autonomy_level NOT NULL DEFAULT 'A',
     status          TEXT NOT NULL DEFAULT 'conceptual'
                         CHECK (status IN ('conceptual','active','paused','frozen','deprecated')),
-    reports_to      UUID REFERENCES os.agents(id), -- jerarquía de agentes
+    reports_to      UUID REFERENCES os.agents(id), -- jerarquia de agentes
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE  os.agents             IS 'Registro permanente de todos los agentes del sistema. No se eliminan — se deprecan.';
-COMMENT ON COLUMN os.agents.code        IS 'Código único del agente según estructura corporativa. Ej: A38, A39, A40.';
-COMMENT ON COLUMN os.agents.max_autonomy IS 'Nivel máximo de autonomía que este agente puede ejercer sin escalación.';
-COMMENT ON COLUMN os.agents.status      IS 'conceptual = definido pero no implementado. Solo A38/A39/A40 serán active en Fase 3.';
+COMMENT ON TABLE  os.agents             IS 'Registro permanente de todos los agentes del sistema. No se eliminan - se deprecan.';
+COMMENT ON COLUMN os.agents.code        IS 'Codigo unico del agente segun estructura corporativa. Ej: A38, A39, A40.';
+COMMENT ON COLUMN os.agents.max_autonomy IS 'Nivel maximo de autonomia que este agente puede ejercer sin escalacion.';
+COMMENT ON COLUMN os.agents.status      IS 'conceptual = definido pero no implementado. Solo A38/A39/A40 seran active en Fase 3.';
 
 CREATE TRIGGER agents_updated_at
     BEFORE UPDATE ON os.agents
@@ -133,8 +133,8 @@ CREATE TRIGGER agents_updated_at
 
 -- -----------------------------------------------------------------------------
 -- os.agent_configs
--- Configuración activa y versionada de cada agente.
--- Separada de agents para permitir rollback de configuración.
+-- Configuracion activa y versionada de cada agente.
+-- Separada de agents para permitir rollback de configuracion.
 -- Solo A39 o el CEO pueden insertar nuevas versiones.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.agent_configs (
@@ -156,15 +156,15 @@ CREATE TABLE os.agent_configs (
     UNIQUE (agent_id, version)
 );
 
-COMMENT ON TABLE  os.agent_configs           IS 'Configuración versionada de agentes. Solo la versión con is_active=true está en uso.';
-COMMENT ON COLUMN os.agent_configs.version   IS 'Incrementa con cada cambio de configuración. Permite rollback a versión anterior.';
+COMMENT ON TABLE  os.agent_configs           IS 'Configuracion versionada de agentes. Solo la version con is_active=true esta en uso.';
+COMMENT ON COLUMN os.agent_configs.version   IS 'Incrementa con cada cambio de configuracion. Permite rollback a version anterior.';
 COMMENT ON COLUMN os.agent_configs.is_active IS 'Solo un registro por agent_id puede tener is_active=TRUE.';
 -- Trigger updated_at diferido a Fase 2 (sin agentes activos en Fase 1).
 
 
 -- -----------------------------------------------------------------------------
 -- os.system_config
--- Parámetros globales del OS. Una sola fila activa a la vez.
+-- Parametros globales del OS. Una sola fila activa a la vez.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.system_config (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -180,11 +180,11 @@ CREATE TABLE os.system_config (
     notes               TEXT
 );
 
-COMMENT ON TABLE os.system_config IS 'Parámetros globales del OS. Debe existir exactamente una fila. Modificable solo por CEO (nivel D).';
+COMMENT ON TABLE os.system_config IS 'Parametros globales del OS. Debe existir exactamente una fila. Modificable solo por CEO (nivel D).';
 
--- Insertar configuración inicial
+-- Insertar configuracion inicial
 INSERT INTO os.system_config (operational_mode, version, notes)
-VALUES ('construction', '0.1.0', 'Configuración inicial — Fase 1. Sin operaciones comerciales activas.');
+VALUES ('construction', '0.1.0', 'Configuracion inicial - Fase 1. Sin operaciones comerciales activas.');
 
 CREATE TRIGGER system_config_updated_at
     BEFORE UPDATE ON os.system_config
@@ -193,7 +193,7 @@ CREATE TRIGGER system_config_updated_at
 
 -- -----------------------------------------------------------------------------
 -- os.jobs
--- Tareas en ejecución o en cola. El Execution Core las procesa.
+-- Tareas en ejecucion o en cola. El Execution Core las procesa.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.jobs (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -201,7 +201,7 @@ CREATE TABLE os.jobs (
     agent_id        UUID REFERENCES os.agents(id),
     command_id      UUID,                         -- FK a os.commands (se agrega luego con ALTER)
     status          os.execution_status NOT NULL DEFAULT 'pending',
-    priority        SMALLINT NOT NULL DEFAULT 5,  -- 1 (más alta) a 10 (más baja)
+    priority        SMALLINT NOT NULL DEFAULT 5,  -- 1 (mas alta) a 10 (mas baja)
     payload         JSONB NOT NULL DEFAULT '{}',
     retry_count     SMALLINT NOT NULL DEFAULT 0,
     max_retries     SMALLINT NOT NULL DEFAULT 3,
@@ -214,7 +214,7 @@ CREATE TABLE os.jobs (
 );
 
 COMMENT ON TABLE  os.jobs            IS 'Cola de tareas del sistema. El Job Worker las procesa en orden de prioridad.';
-COMMENT ON COLUMN os.jobs.priority   IS '1 = máxima prioridad (CEO/crítico). 10 = mínima prioridad (batch).';
+COMMENT ON COLUMN os.jobs.priority   IS '1 = maxima prioridad (CEO/critico). 10 = minima prioridad (batch).';
 COMMENT ON COLUMN os.jobs.payload    IS 'Datos de entrada del job. JSONB para flexibilidad entre tipos de tarea.';
 -- Trigger updated_at diferido a Fase 2 (Job Worker no existe en Fase 1).
 
@@ -233,32 +233,32 @@ CREATE TABLE os.job_results (
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.job_results IS 'Resultados inmutables de jobs. Un job puede tener múltiples resultados (reintentos).';
+COMMENT ON TABLE os.job_results IS 'Resultados inmutables de jobs. Un job puede tener multiples resultados (reintentos).';
 
 
 -- =============================================================================
--- GRUPO 2 — GOVERNANCE & AUDIT TABLES
--- Logs inmutables. Nunca se modifican. Append-only por política.
+-- GRUPO 2 - GOVERNANCE & AUDIT TABLES
+-- Logs inmutables. Nunca se modifican. Append-only por politica.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- os.audit_log
--- Tabla más crítica del sistema. Registro inmutable de toda acción.
+-- Tabla mas critica del sistema. Registro inmutable de toda accion.
 -- RLS: solo INSERT. Ni A38 puede hacer UPDATE o DELETE.
 -- Base del Rollback Worker: usa state_before para revertir.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.audit_log (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_id        UUID REFERENCES os.agents(id),
-    agent_code      TEXT NOT NULL,                 -- desnormalizado para legibilidad en auditoría
+    agent_code      TEXT NOT NULL,                 -- desnormalizado para legibilidad en auditoria
     action_type     TEXT NOT NULL,                 -- 'INSERT', 'UPDATE', 'DELETE', 'EXECUTE', etc.
     entity_type     TEXT NOT NULL,                 -- tabla o recurso afectado: 'sbr.ventas', 'os.agent_configs'
     entity_id       TEXT,                          -- ID del registro afectado (TEXT para soportar cualquier tipo)
     autonomy_level  os.autonomy_level NOT NULL,
-    confidence_score NUMERIC(3,2),                 -- 0.00 a 1.00 — si < 0.7, debió escalar
+    confidence_score NUMERIC(3,2),                 -- 0.00 a 1.00 - si < 0.7, debio escalar
     risk_level      TEXT NOT NULL DEFAULT 'LOW'
                         CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
-    state_before    JSONB,                         -- estado anterior — base del rollback
+    state_before    JSONB,                         -- estado anterior - base del rollback
     state_after     JSONB,                         -- estado posterior
     command_id      UUID,                          -- FK a os.commands
     job_id          UUID,                          -- FK a os.jobs
@@ -269,14 +269,14 @@ CREATE TABLE os.audit_log (
     -- Sin updated_at: esta tabla es append-only. Nunca se modifica.
 );
 
-COMMENT ON TABLE  os.audit_log              IS 'APPEND-ONLY. Registro inmutable de toda acción del sistema. Base del Rollback Worker. Nunca se modifica ni elimina.';
+COMMENT ON TABLE  os.audit_log              IS 'APPEND-ONLY. Registro inmutable de toda accion del sistema. Base del Rollback Worker. Nunca se modifica ni elimina.';
 COMMENT ON COLUMN os.audit_log.state_before IS 'JSON del estado anterior al cambio. El Rollback Worker usa esto para revertir.';
 COMMENT ON COLUMN os.audit_log.agent_code   IS 'Desnormalizado intencionalmente: si un agente se depreca, el historial debe seguir siendo legible.';
 
 
 -- -----------------------------------------------------------------------------
 -- os.decisions_log
--- Registro de decisiones de nivel C y D (debate Proponte/Retador → CEO).
+-- Registro de decisiones de nivel C y D (debate Proponte/Retador -> CEO).
 -- Append-only.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.decisions_log (
@@ -284,7 +284,7 @@ CREATE TABLE os.decisions_log (
     decision_type       TEXT NOT NULL,             -- 'strategic', 'architecture', 'governance', etc.
     autonomy_level      os.autonomy_level NOT NULL CHECK (autonomy_level IN ('C', 'D')),
     title               TEXT NOT NULL,
-    context             TEXT NOT NULL,             -- descripción del problema / decisión
+    context             TEXT NOT NULL,             -- descripcion del problema / decision
     proposer_agent      TEXT,                      -- agente que propone (puede ser CEO)
     challenger_agent    TEXT,                      -- agente retador (puede ser CEO)
     proposer_argument   TEXT,
@@ -293,18 +293,18 @@ CREATE TABLE os.decisions_log (
                             CHECK (outcome IN ('approved','rejected','escalated','pending')),
     decided_by          TEXT,                      -- 'CEO' siempre para nivel C/D
     decided_at          TIMESTAMPTZ,
-    rationale           TEXT,                      -- por qué se tomó esta decisión
+    rationale           TEXT,                      -- por que se tomo esta decision
     audit_log_id        UUID REFERENCES os.audit_log(id),
     logged_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.decisions_log IS 'APPEND-ONLY. Historial de decisiones estratégicas (nivel C y D). Debate Proponte/Retador documentado.';
+COMMENT ON TABLE os.decisions_log IS 'APPEND-ONLY. Historial de decisiones estrategicas (nivel C y D). Debate Proponte/Retador documentado.';
 
 
 -- -----------------------------------------------------------------------------
 -- os.approval_requests
--- Cola de solicitudes pendientes de aprobación del CEO.
--- El CEO ve aquí todo lo que requiere su intervención.
+-- Cola de solicitudes pendientes de aprobacion del CEO.
+-- El CEO ve aqui todo lo que requiere su intervencion.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.approval_requests (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -313,7 +313,7 @@ CREATE TABLE os.approval_requests (
     autonomy_level  os.autonomy_level NOT NULL,
     title           TEXT NOT NULL,
     description     TEXT NOT NULL,
-    payload         JSONB NOT NULL DEFAULT '{}',   -- datos completos de la acción a aprobar
+    payload         JSONB NOT NULL DEFAULT '{}',   -- datos completos de la accion a aprobar
     risk_level      TEXT NOT NULL DEFAULT 'MEDIUM'
                         CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
     outcome         TEXT NOT NULL DEFAULT 'pending'
@@ -326,7 +326,7 @@ CREATE TABLE os.approval_requests (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.approval_requests IS 'Cola de aprobaciones pendientes del CEO. Nivel C y D llegan aquí antes de ejecutarse.';
+COMMENT ON TABLE os.approval_requests IS 'Cola de aprobaciones pendientes del CEO. Nivel C y D llegan aqui antes de ejecutarse.';
 
 CREATE TRIGGER approval_requests_updated_at
     BEFORE UPDATE ON os.approval_requests
@@ -335,8 +335,8 @@ CREATE TRIGGER approval_requests_updated_at
 
 -- -----------------------------------------------------------------------------
 -- os.governance_violations
--- Intentos de acción que superaron el nivel de autonomía del agente.
--- Append-only. Nunca se borra. Insumo para auditoría y mejora del sistema.
+-- Intentos de accion que superaron el nivel de autonomia del agente.
+-- Append-only. Nunca se borra. Insumo para auditoria y mejora del sistema.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.governance_violations (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -354,23 +354,23 @@ CREATE TABLE os.governance_violations (
     detected_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.governance_violations IS 'APPEND-ONLY. Todo intento de acción que excedió el nivel de autonomía del agente. Nunca se elimina.';
+COMMENT ON TABLE os.governance_violations IS 'APPEND-ONLY. Todo intento de accion que excedio el nivel de autonomia del agente. Nunca se elimina.';
 
 
 -- =============================================================================
--- GRUPO 3 — EXECUTION RUNTIME TABLES
--- El motor. Eventos → Comandos → Ejecución → Resultados.
+-- GRUPO 3 - EXECUTION RUNTIME TABLES
+-- El motor. Eventos -> Comandos -> Ejecucion -> Resultados.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- os.events
--- Todo lo que puede disparar una acción en el sistema.
+-- Todo lo que puede disparar una accion en el sistema.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.events (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_type      TEXT NOT NULL,                 -- 'webhook', 'timer', 'agent_trigger', 'manual', etc.
     source          TEXT NOT NULL,                 -- 'instagram', 'whatsapp', 'internal', 'ceo', etc.
-    agent_id        UUID REFERENCES os.agents(id), -- agente que originó el evento (si aplica)
+    agent_id        UUID REFERENCES os.agents(id), -- agente que origino el evento (si aplica)
     payload         JSONB NOT NULL DEFAULT '{}',
     status          os.execution_status NOT NULL DEFAULT 'pending',
     command_id      UUID,                          -- FK a os.commands (se agrega con ALTER)
@@ -400,7 +400,7 @@ CREATE TABLE os.commands (
     risk_level          TEXT NOT NULL DEFAULT 'LOW'
                             CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
     payload             JSONB NOT NULL DEFAULT '{}',
-    governance_passed   BOOLEAN,                   -- null = no evaluado aún
+    governance_passed   BOOLEAN,                   -- null = no evaluado aun
     governance_notes    TEXT,
     approval_request_id UUID REFERENCES os.approval_requests(id),
     status              os.execution_status NOT NULL DEFAULT 'pending',
@@ -410,7 +410,7 @@ CREATE TABLE os.commands (
 );
 
 COMMENT ON TABLE  os.commands                    IS 'Instrucciones de agentes. Pasan por governance middleware antes de ejecutarse.';
-COMMENT ON COLUMN os.commands.confidence_score   IS 'Si < 0.7 el governance middleware escala automáticamente, independientemente del nivel declarado.';
+COMMENT ON COLUMN os.commands.confidence_score   IS 'Si < 0.7 el governance middleware escala automaticamente, independientemente del nivel declarado.';
 COMMENT ON COLUMN os.commands.governance_passed  IS 'NULL = no evaluado. TRUE = aprobado. FALSE = bloqueado.';
 
 CREATE TRIGGER commands_updated_at
@@ -420,7 +420,7 @@ CREATE TRIGGER commands_updated_at
 
 -- -----------------------------------------------------------------------------
 -- os.execution_runs
--- Cada intento de ejecución de un comando. Un comando puede tener varios
+-- Cada intento de ejecucion de un comando. Un comando puede tener varios
 -- (reintentos). El Retry Worker crea nuevas filas, no modifica las existentes.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.execution_runs (
@@ -428,7 +428,7 @@ CREATE TABLE os.execution_runs (
     command_id      UUID NOT NULL REFERENCES os.commands(id),
     job_id          UUID REFERENCES os.jobs(id),
     attempt_number  SMALLINT NOT NULL DEFAULT 1,
-    worker_id       TEXT,                          -- identificador del worker que procesó
+    worker_id       TEXT,                          -- identificador del worker que proceso
     status          os.execution_status NOT NULL DEFAULT 'running',
     started_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at    TIMESTAMPTZ,
@@ -439,14 +439,14 @@ CREATE TABLE os.execution_runs (
     audit_log_id    UUID REFERENCES os.audit_log(id)
 );
 
-COMMENT ON TABLE  os.execution_runs               IS 'Cada intento de ejecución de un comando. Append-only: el Retry Worker agrega filas nuevas.';
-COMMENT ON COLUMN os.execution_runs.attempt_number IS 'Número de intento. 1 = primera ejecución. 2+ = reintento por Retry Worker.';
+COMMENT ON TABLE  os.execution_runs               IS 'Cada intento de ejecucion de un comando. Append-only: el Retry Worker agrega filas nuevas.';
+COMMENT ON COLUMN os.execution_runs.attempt_number IS 'Numero de intento. 1 = primera ejecucion. 2+ = reintento por Retry Worker.';
 
 
 -- -----------------------------------------------------------------------------
 -- os.dead_letter_queue
 -- Comandos y mensajes que fallaron todos sus reintentos.
--- Requieren revisión manual por A39 o CEO.
+-- Requieren revision manual por A39 o CEO.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.dead_letter_queue (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -465,7 +465,7 @@ CREATE TABLE os.dead_letter_queue (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.dead_letter_queue IS 'Mensajes que agotaron todos los reintentos. A39 los revisa diariamente según el Gobierno.';
+COMMENT ON TABLE os.dead_letter_queue IS 'Mensajes que agotaron todos los reintentos. A39 los revisa diariamente segun el Gobierno.';
 
 CREATE TRIGGER dead_letter_queue_updated_at
     BEFORE UPDATE ON os.dead_letter_queue
@@ -483,7 +483,7 @@ CREATE TABLE os.rollback_log (
     audit_log_id        UUID NOT NULL REFERENCES os.audit_log(id), -- state_before usado para revertir
     rolled_back_by      TEXT NOT NULL,             -- 'rollback_worker', 'CEO', 'A38'
     reason              TEXT NOT NULL,
-    state_restored      JSONB NOT NULL,            -- copia del state_before que se restauró
+    state_restored      JSONB NOT NULL,            -- copia del state_before que se restauro
     success             BOOLEAN NOT NULL,
     error_message       TEXT,                      -- si success=false
     executed_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -498,14 +498,14 @@ ALTER TABLE os.events  ADD CONSTRAINT events_command_id_fk  FOREIGN KEY (command
 
 
 -- =============================================================================
--- GRUPO 4 — OBSERVABILITY TABLES
--- Sin observabilidad, no hay producción. La capa que hace el sistema visible.
+-- GRUPO 4 - OBSERVABILITY TABLES
+-- Sin observabilidad, no hay produccion. La capa que hace el sistema visible.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- os.operational_logs
--- Logs técnicos de ejecución. Alta velocidad de escritura.
--- Retención: 30 días. Purgables (la única tabla con purga automática).
+-- Logs tecnicos de ejecucion. Alta velocidad de escritura.
+-- Retencion: 30 dias. Purgables (la unica tabla con purga automatica).
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.operational_logs (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -521,14 +521,14 @@ CREATE TABLE os.operational_logs (
     -- Sin updated_at: los logs no se modifican.
 );
 
-COMMENT ON TABLE  os.operational_logs           IS 'Logs técnicos de ejecución. Retención: 30 días. Son los únicos logs purgables del sistema.';
-COMMENT ON COLUMN os.operational_logs.component IS 'Worker o componente que generó el log. Facilita filtrado en el dashboard de observabilidad.';
+COMMENT ON TABLE  os.operational_logs           IS 'Logs tecnicos de ejecucion. Retencion: 30 dias. Son los unicos logs purgables del sistema.';
+COMMENT ON COLUMN os.operational_logs.component IS 'Worker o componente que genero el log. Facilita filtrado en el dashboard de observabilidad.';
 
 
 -- -----------------------------------------------------------------------------
 -- os.health_checks
 -- Estado de cada componente en cada punto de tiempo.
--- El Observability Worker escribe aquí periódicamente.
+-- El Observability Worker escribe aqui periodicamente.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.health_checks (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -536,22 +536,22 @@ CREATE TABLE os.health_checks (
     status          TEXT NOT NULL
                         CHECK (status IN ('healthy','degraded','unhealthy','unknown')),
     latency_ms      INTEGER,
-    details         JSONB DEFAULT '{}',            -- info adicional: versión, métricas específicas
+    details         JSONB DEFAULT '{}',            -- info adicional: version, metricas especificas
     error_message   TEXT,
     checked_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.health_checks IS 'Estado de salud de cada componente del sistema. Escrito periódicamente por el Observability Worker.';
+COMMENT ON TABLE os.health_checks IS 'Estado de salud de cada componente del sistema. Escrito periodicamente por el Observability Worker.';
 
 
 -- os.agent_metrics DIFERIDA A MIGRATION 002
--- Requiere Observability Worker activo (Fase 2) para ser útil.
--- Sin el worker que la llena, la tabla existe vacía sin propósito.
+-- Requiere Observability Worker activo (Fase 2) para ser util.
+-- Sin el worker que la llena, la tabla existe vacia sin proposito.
 
 
 -- -----------------------------------------------------------------------------
 -- os.system_alerts
--- Alertas generadas por el sistema. El CEO ve las CRITICAL aquí.
+-- Alertas generadas por el sistema. El CEO ve las CRITICAL aqui.
 -- -----------------------------------------------------------------------------
 CREATE TABLE os.system_alerts (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -573,7 +573,7 @@ CREATE TABLE os.system_alerts (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE os.system_alerts IS 'Alertas del sistema. CRITICAL y ERROR escalan al CEO inmediatamente según el Gobierno.';
+COMMENT ON TABLE os.system_alerts IS 'Alertas del sistema. CRITICAL y ERROR escalan al CEO inmediatamente segun el Gobierno.';
 
 CREATE TRIGGER system_alerts_updated_at
     BEFORE UPDATE ON os.system_alerts
@@ -581,15 +581,15 @@ CREATE TRIGGER system_alerts_updated_at
 
 
 -- =============================================================================
--- GRUPO 5 — STYLED BY ROUS PILOT BUSINESS TABLES (sbr.*)
--- Módulo de negocio piloto. Demuestra que el OS puede operar una empresa real.
--- El prefijo sbr.* lo separa semánticamente del OS.
--- Una segunda empresa usaría un prefijo diferente — esto es replicable.
+-- GRUPO 5 - STYLED BY ROUS PILOT BUSINESS TABLES (sbr.*)
+-- Modulo de negocio piloto. Demuestra que el OS puede operar una empresa real.
+-- El prefijo sbr.* lo separa semanticamente del OS.
+-- Una segunda empresa usaria un prefijo diferente - esto es replicable.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
 -- sbr.config
--- Parámetros de configuración de la empresa piloto.
+-- Parametros de configuracion de la empresa piloto.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.config (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -599,7 +599,7 @@ CREATE TABLE sbr.config (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE sbr.config IS 'Parámetros de configuración del módulo StyledByRous. Equivale a la tabla config del ERP SQLite.';
+COMMENT ON TABLE sbr.config IS 'Parametros de configuracion del modulo StyledByRous. Equivale a la tabla config del ERP SQLite.';
 
 CREATE TRIGGER sbr_config_updated_at
     BEFORE UPDATE ON sbr.config
@@ -608,7 +608,7 @@ CREATE TRIGGER sbr_config_updated_at
 -- Valores iniciales
 INSERT INTO sbr.config (clave, valor, descripcion) VALUES
     ('empresa_nombre',    'Styled by Rous',   'Nombre comercial de la empresa'),
-    ('moneda_base',       'DOP',              'Moneda base de operación'),
+    ('moneda_base',       'DOP',              'Moneda base de operacion'),
     ('iva_porcentaje',    '18',               'Porcentaje de ITBIS/IVA'),
     ('instagram_handle',  '@styledbyrous',    'Handle de Instagram principal'),
     ('timezone',          'America/Santo_Domingo', 'Zona horaria de la empresa');
@@ -620,7 +620,7 @@ INSERT INTO sbr.config (clave, valor, descripcion) VALUES
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.monedas (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    codigo      TEXT NOT NULL UNIQUE,  -- 'DOP', 'USD', 'EUR', 'CNY'
+    codigo      TEXT NOT NULL UNIQUE,  -- 'DOP', 'USD', 'EUR'
     nombre      TEXT NOT NULL,
     simbolo     TEXT NOT NULL,
     tasa_a_dop  NUMERIC(12,4) NOT NULL DEFAULT 1,
@@ -629,12 +629,13 @@ CREATE TABLE sbr.monedas (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Triggers sbr.monedas → sbr.gastos_fijos diferidos a Fase 2.
--- Sin operaciones comerciales en Fase 1, los updated_at no son necesarios todavía. (codigo, nombre, simbolo, tasa_a_dop, es_base) VALUES
+-- Triggers sbr.monedas -> sbr.gastos_fijos diferidos a Fase 2.
+-- Sin operaciones comerciales en Fase 1, los updated_at no son necesarios todavia.
+
+INSERT INTO sbr.monedas (codigo, nombre, simbolo, tasa_a_dop, es_base) VALUES
     ('DOP', 'Peso Dominicano', 'RD$', 1.0000, TRUE),
-    ('USD', 'Dólar Americano', '$',   60.0000, FALSE),
-    ('EUR', 'Euro',            '€',   65.0000, FALSE),
-    ('CNY', 'Yuan Chino',      '¥',    8.5000, FALSE);
+    ('USD', 'Dolar Americano', '$',   60.0000, FALSE),
+    ('EUR', 'Euro',            'EUR', 65.0000, FALSE);
 
 
 -- -----------------------------------------------------------------------------
@@ -677,7 +678,7 @@ CREATE TABLE sbr.clientes (
 
 -- -----------------------------------------------------------------------------
 -- sbr.productos
--- Catálogo de productos. La existencia física vive en sbr.inventario.
+-- Catalogo de productos. La existencia fisica vive en sbr.inventario.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.productos (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -715,7 +716,7 @@ CREATE TABLE sbr.inventario (
 
 -- -----------------------------------------------------------------------------
 -- sbr.inventario_entradas
--- Histórico de entradas de inventario. Append-only.
+-- Historico de entradas de inventario. Append-only.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.inventario_entradas (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -731,7 +732,7 @@ CREATE TABLE sbr.inventario_entradas (
     entered_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE sbr.inventario_entradas IS 'APPEND-ONLY. Histórico de entradas al inventario. No se modifican — se hacen ajustes con entradas negativas si aplica.';
+COMMENT ON TABLE sbr.inventario_entradas IS 'APPEND-ONLY. Historico de entradas al inventario. No se modifican - se hacen ajustes con entradas negativas si aplica.';
 
 
 -- -----------------------------------------------------------------------------
@@ -759,7 +760,7 @@ CREATE TABLE sbr.liquidaciones (
 
 -- -----------------------------------------------------------------------------
 -- sbr.liquidacion_piezas
--- Piezas individuales dentro de una liquidación.
+-- Piezas individuales dentro de una liquidacion.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.liquidacion_piezas (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -775,7 +776,7 @@ CREATE TABLE sbr.liquidacion_piezas (
 
 -- -----------------------------------------------------------------------------
 -- sbr.liquidacion_gastos
--- Gastos asociados a una liquidación (flete, aduanas, etc.).
+-- Gastos asociados a una liquidacion (flete, aduanas, etc.).
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.liquidacion_gastos (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -791,7 +792,7 @@ CREATE TABLE sbr.liquidacion_gastos (
 
 -- -----------------------------------------------------------------------------
 -- sbr.liquidacion_reembolsos
--- Reembolsos del proveedor aplicables a una liquidación.
+-- Reembolsos del proveedor aplicables a una liquidacion.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.liquidacion_reembolsos (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -805,7 +806,7 @@ CREATE TABLE sbr.liquidacion_reembolsos (
 
 -- -----------------------------------------------------------------------------
 -- sbr.liquidacion_docs
--- Documentos adjuntos a una liquidación (facturas, B/L, permisos, etc.).
+-- Documentos adjuntos a una liquidacion (facturas, B/L, permisos, etc.).
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.liquidacion_docs (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -819,7 +820,7 @@ CREATE TABLE sbr.liquidacion_docs (
 
 -- -----------------------------------------------------------------------------
 -- sbr.ventas
--- Registro de ventas. Descuenta stock automáticamente (a nivel de aplicación).
+-- Registro de ventas. Descuenta stock automaticamente (a nivel de aplicacion).
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.ventas (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -842,8 +843,8 @@ CREATE TABLE sbr.ventas (
 
 -- -----------------------------------------------------------------------------
 -- sbr.venta_items
--- Líneas de detalle de cada venta.
--- (No existía explícitamente en el ERP SQLite — se agrega por correctitud relacional.)
+-- Lineas de detalle de cada venta.
+-- (No existia explicitamente en el ERP SQLite - se agrega por correctitud relacional.)
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.venta_items (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -859,8 +860,8 @@ CREATE TABLE sbr.venta_items (
 
 
 -- -----------------------------------------------------------------------------
--- sbr.cxc — Cuentas por Cobrar
--- Se genera automáticamente cuando forma_pago = 'credito'.
+-- sbr.cxc - Cuentas por Cobrar
+-- Se genera automaticamente cuando forma_pago = 'credito'.
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.cxc (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -879,7 +880,7 @@ CREATE TABLE sbr.cxc (
 
 
 -- -----------------------------------------------------------------------------
--- sbr.cxc_pagos — Abonos a Cuentas por Cobrar
+-- sbr.cxc_pagos - Abonos a Cuentas por Cobrar
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.cxc_pagos (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -893,7 +894,7 @@ CREATE TABLE sbr.cxc_pagos (
 
 
 -- -----------------------------------------------------------------------------
--- sbr.cxp — Cuentas por Pagar
+-- sbr.cxp - Cuentas por Pagar
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.cxp (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -913,7 +914,7 @@ CREATE TABLE sbr.cxp (
 
 
 -- -----------------------------------------------------------------------------
--- sbr.cxp_pagos — Abonos a Cuentas por Pagar
+-- sbr.cxp_pagos - Abonos a Cuentas por Pagar
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.cxp_pagos (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -928,7 +929,7 @@ CREATE TABLE sbr.cxp_pagos (
 
 -- -----------------------------------------------------------------------------
 -- sbr.gastos_fijos
--- Gastos operativos recurrentes (no ligados a una compra o liquidación).
+-- Gastos operativos recurrentes (no ligados a una compra o liquidacion).
 -- -----------------------------------------------------------------------------
 CREATE TABLE sbr.gastos_fijos (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -963,11 +964,11 @@ CREATE TABLE sbr.movimientos (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE sbr.movimientos IS 'APPEND-ONLY. Libro mayor simplificado. Todo movimiento financiero queda registrado aquí.';
+COMMENT ON TABLE sbr.movimientos IS 'APPEND-ONLY. Libro mayor simplificado. Todo movimiento financiero queda registrado aqui.';
 
 
 -- =============================================================================
--- 8. ÍNDICES
+-- 8. INDICES
 -- =============================================================================
 
 -- OS Core
@@ -1007,14 +1008,14 @@ CREATE INDEX idx_sbr_cxc_estado            ON sbr.cxc(estado) WHERE estado IN ('
 CREATE INDEX idx_sbr_cxp_estado            ON sbr.cxp(estado) WHERE estado IN ('pendiente', 'parcial');
 CREATE INDEX idx_sbr_movimientos_fecha      ON sbr.movimientos(fecha DESC);
 CREATE INDEX idx_sbr_liquidaciones_estado   ON sbr.liquidaciones(estado);
--- Índice de os.agent_metrics diferido a migration 002 junto con la tabla.
+-- Indice de os.agent_metrics diferido a migration 002 junto con la tabla.
 
 
 -- =============================================================================
--- 9. ROW LEVEL SECURITY — BÁSICO MÍNIMO
+-- 9. ROW LEVEL SECURITY - BASICO MINIMO
 -- =============================================================================
 
--- Habilitar RLS en tablas críticas del OS
+-- Habilitar RLS en tablas criticas del OS
 ALTER TABLE os.audit_log              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE os.governance_violations  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE os.rollback_log           ENABLE ROW LEVEL SECURITY;
@@ -1046,31 +1047,20 @@ CREATE POLICY decisions_log_insert_only ON os.decisions_log
     FOR INSERT WITH CHECK (TRUE);
 
 -- SELECT: controlado por service key en Fase 1.
--- Políticas SELECT por rol de agente se agregan en Fase 3 cuando A38/A39 tengan roles de DB asignados.
+-- Politicas SELECT por rol de agente se agregan en Fase 3 cuando A38/A39 tengan roles de DB asignados.
 
 
 -- =============================================================================
 -- FIN DE MIGRATION 001 v2.0.0
 -- =============================================================================
 --
--- RESUMEN DEL SCHEMA (v2 — Minimal Viable Infrastructure):
--- ┌─────────────────────────────────┬────────┬─────────────────────────────┐
--- │ Grupo                           │ Tablas │ Schema                      │
--- ├─────────────────────────────────┼────────┼─────────────────────────────┤
--- │ Core OS                         │   5    │ os.*                        │
--- │ Governance & Audit              │   4    │ os.*                        │
--- │ Execution Runtime               │   5    │ os.*                        │
--- │ Observability                   │   3    │ os.* (agent_metrics → 002)  │
--- │ StyledByRous Pilot              │  20    │ sbr.*                       │
--- ├─────────────────────────────────┼────────┼─────────────────────────────┤
--- │ TOTAL                           │  37    │                             │
--- └─────────────────────────────────┴────────┴─────────────────────────────┘
+-- RESUMEN DEL SCHEMA (v2 - Minimal Viable Infrastructure):
 --
 -- SIMPLIFICACIONES vs v1:
---   Triggers:      18 → 7   (11 diferidos a Fase 2)
---   ENUMs:          9 → 4   (5 convertidos a TEXT + CHECK)
---   RLS policies:  11 → 7   (4 SELECT eliminadas)
---   Tablas:        38 → 37  (os.agent_metrics → migration 002)
+--   Triggers:      18 -> 7   (11 diferidos a Fase 2)
+--   ENUMs:          9 -> 4   (5 convertidos a TEXT + CHECK)
+--   RLS policies:  11 -> 7   (4 SELECT eliminadas)
+--   Tablas:        38 -> 37  (os.agent_metrics -> migration 002)
 --
 -- ENUMs ACTIVOS (4):
 --   os.autonomy_level, os.execution_status, os.severity, os.operational_mode
@@ -1087,6 +1077,6 @@ CREATE POLICY decisions_log_insert_only ON os.decisions_log
 -- NOTA PARA EL CEO:
 --   Antes de ejecutar, crear el proyecto Supabase y ejecutar este archivo
 --   completo en el SQL Editor. El orden de los bloques importa.
---   Próximo paso: conectar ByRousOS (Next.js) a Supabase vía variables
+--   Proximo paso: conectar ByRousOS (Next.js) a Supabase via variables
 --   de entorno (SUPABASE_URL + SUPABASE_ANON_KEY + SUPABASE_SERVICE_KEY).
 -- =============================================================================
