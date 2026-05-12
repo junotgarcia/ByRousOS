@@ -7,6 +7,10 @@ const schema = z.object({
   OPENAI_CHAT_MODEL: z.string().min(1).optional(),
   ANTHROPIC_CHAT_MODEL: z.string().min(1).optional(),
   AI_PROVIDER: z.enum(["openai", "anthropic", "mock"]).optional(),
+  // Supabase
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 });
 
 /**
