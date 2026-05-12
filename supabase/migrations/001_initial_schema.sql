@@ -1,11 +1,11 @@
 -- =============================================================================
 -- ByRousOS — Migration 001: Initial Schema
 -- =============================================================================
--- Versión:      1.0.0
+-- Versión:      2.0.0
 -- Fecha:        2026-05-11
--- Descripción:  Schema inicial completo de ByRousOS.
---               Prioridad: infraestructura del sistema operativo.
---               Módulo piloto: StyledByRous (sbr.*).
+-- Descripción:  Schema inicial simplificado de ByRousOS — Minimal Viable Infrastructure.
+--               Simplificaciones vs v1: triggers reducidos (18→7), ENUMs reducidos (9→4),
+--               RLS simplificado (11→7 políticas), os.agent_metrics diferida a migration 002.
 -- Ejecutar en:  Supabase SQL Editor (producción o staging)
 -- ADVERTENCIA:  Revisión y aprobación del CEO requerida antes de ejecutar.
 -- =============================================================================
@@ -47,14 +47,7 @@ CREATE TYPE os.autonomy_level AS ENUM (
     'D'   -- Irreversible — bloqueado para agentes, solo CEO
 );
 
--- Estado de un agente en el sistema
-CREATE TYPE os.agent_status AS ENUM (
-    'conceptual',   -- Definido pero no implementado (Fases 0-2)
-    'active',       -- Operando normalmente
-    'paused',       -- Pausado por CEO o por modo degradado
-    'frozen',       -- Congelado — no puede recibir comandos
-    'deprecated'    -- Reemplazado por versión posterior
-);
+-- os.agent_status → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
 
 -- Estado de un job o comando en su ciclo de vida
 CREATE TYPE os.execution_status AS ENUM (
@@ -67,29 +60,10 @@ CREATE TYPE os.execution_status AS ENUM (
     'cancelled'
 );
 
--- Nivel de riesgo operacional de una acción
-CREATE TYPE os.risk_level AS ENUM (
-    'LOW',
-    'MEDIUM',
-    'HIGH',
-    'CRITICAL'
-);
-
--- Resultado de una decisión de governance
-CREATE TYPE os.decision_outcome AS ENUM (
-    'approved',
-    'rejected',
-    'escalated',
-    'pending'
-);
-
--- Estado de una alerta del sistema
-CREATE TYPE os.alert_status AS ENUM (
-    'open',
-    'acknowledged',
-    'resolved',
-    'suppressed'
-);
+-- os.risk_level     → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.decision_outcome→ TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.alert_status   → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
+-- os.health_status  → TEXT + CHECK (Fase 1). Convertir a ENUM en Fase 2 con ALTER.
 
 -- Severidad de logs y alertas
 CREATE TYPE os.severity AS ENUM (
@@ -100,13 +74,7 @@ CREATE TYPE os.severity AS ENUM (
     'CRITICAL'
 );
 
--- Estado de salud de un componente
-CREATE TYPE os.health_status AS ENUM (
-    'healthy',
-    'degraded',
-    'unhealthy',
-    'unknown'
-);
+-- os.health_status → TEXT + CHECK — ver nota arriba.
 
 -- Modo operacional global del sistema
 CREATE TYPE os.operational_mode AS ENUM (
@@ -146,7 +114,8 @@ CREATE TABLE os.agents (
     area            TEXT NOT NULL,                 -- 'technology', 'operations', 'finance', etc.
     description     TEXT,
     max_autonomy    os.autonomy_level NOT NULL DEFAULT 'A',
-    status          os.agent_status   NOT NULL DEFAULT 'conceptual',
+    status          TEXT NOT NULL DEFAULT 'conceptual'
+                        CHECK (status IN ('conceptual','active','paused','frozen','deprecated')),
     reports_to      UUID REFERENCES os.agents(id), -- jerarquía de agentes
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -190,6 +159,7 @@ CREATE TABLE os.agent_configs (
 COMMENT ON TABLE  os.agent_configs           IS 'Configuración versionada de agentes. Solo la versión con is_active=true está en uso.';
 COMMENT ON COLUMN os.agent_configs.version   IS 'Incrementa con cada cambio de configuración. Permite rollback a versión anterior.';
 COMMENT ON COLUMN os.agent_configs.is_active IS 'Solo un registro por agent_id puede tener is_active=TRUE.';
+-- Trigger updated_at diferido a Fase 2 (sin agentes activos en Fase 1).
 
 
 -- -----------------------------------------------------------------------------
@@ -246,10 +216,7 @@ CREATE TABLE os.jobs (
 COMMENT ON TABLE  os.jobs            IS 'Cola de tareas del sistema. El Job Worker las procesa en orden de prioridad.';
 COMMENT ON COLUMN os.jobs.priority   IS '1 = máxima prioridad (CEO/crítico). 10 = mínima prioridad (batch).';
 COMMENT ON COLUMN os.jobs.payload    IS 'Datos de entrada del job. JSONB para flexibilidad entre tipos de tarea.';
-
-CREATE TRIGGER jobs_updated_at
-    BEFORE UPDATE ON os.jobs
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger updated_at diferido a Fase 2 (Job Worker no existe en Fase 1).
 
 
 -- -----------------------------------------------------------------------------
@@ -289,7 +256,8 @@ CREATE TABLE os.audit_log (
     entity_id       TEXT,                          -- ID del registro afectado (TEXT para soportar cualquier tipo)
     autonomy_level  os.autonomy_level NOT NULL,
     confidence_score NUMERIC(3,2),                 -- 0.00 a 1.00 — si < 0.7, debió escalar
-    risk_level      os.risk_level NOT NULL DEFAULT 'LOW',
+    risk_level      TEXT NOT NULL DEFAULT 'LOW'
+                        CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
     state_before    JSONB,                         -- estado anterior — base del rollback
     state_after     JSONB,                         -- estado posterior
     command_id      UUID,                          -- FK a os.commands
@@ -321,7 +289,8 @@ CREATE TABLE os.decisions_log (
     challenger_agent    TEXT,                      -- agente retador (puede ser CEO)
     proposer_argument   TEXT,
     challenger_argument TEXT,
-    outcome             os.decision_outcome NOT NULL DEFAULT 'pending',
+    outcome             TEXT NOT NULL DEFAULT 'pending'
+                            CHECK (outcome IN ('approved','rejected','escalated','pending')),
     decided_by          TEXT,                      -- 'CEO' siempre para nivel C/D
     decided_at          TIMESTAMPTZ,
     rationale           TEXT,                      -- por qué se tomó esta decisión
@@ -345,8 +314,10 @@ CREATE TABLE os.approval_requests (
     title           TEXT NOT NULL,
     description     TEXT NOT NULL,
     payload         JSONB NOT NULL DEFAULT '{}',   -- datos completos de la acción a aprobar
-    risk_level      os.risk_level NOT NULL DEFAULT 'MEDIUM',
-    outcome         os.decision_outcome NOT NULL DEFAULT 'pending',
+    risk_level      TEXT NOT NULL DEFAULT 'MEDIUM'
+                        CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
+    outcome         TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (outcome IN ('approved','rejected','escalated','pending')),
     reviewed_by     TEXT,                          -- 'CEO' cuando se resuelve
     reviewed_at     TIMESTAMPTZ,
     review_notes    TEXT,
@@ -375,7 +346,8 @@ CREATE TABLE os.governance_violations (
     attempted_action TEXT NOT NULL,
     attempted_autonomy_level os.autonomy_level NOT NULL,
     agent_max_autonomy       os.autonomy_level NOT NULL,
-    risk_level      os.risk_level NOT NULL,
+    risk_level      TEXT NOT NULL
+                        CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
     payload         JSONB DEFAULT '{}',
     blocked_by      TEXT NOT NULL DEFAULT 'governance_middleware',
     notes           TEXT,
@@ -425,7 +397,8 @@ CREATE TABLE os.commands (
     target_entity       TEXT NOT NULL,             -- tabla o recurso objetivo: 'sbr.ventas', 'os.agent_configs'
     autonomy_level      os.autonomy_level NOT NULL,
     confidence_score    NUMERIC(3,2) NOT NULL,     -- 0.00 a 1.00
-    risk_level          os.risk_level NOT NULL DEFAULT 'LOW',
+    risk_level          TEXT NOT NULL DEFAULT 'LOW'
+                            CHECK (risk_level IN ('LOW','MEDIUM','HIGH','CRITICAL')),
     payload             JSONB NOT NULL DEFAULT '{}',
     governance_passed   BOOLEAN,                   -- null = no evaluado aún
     governance_notes    TEXT,
@@ -560,7 +533,8 @@ COMMENT ON COLUMN os.operational_logs.component IS 'Worker o componente que gene
 CREATE TABLE os.health_checks (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     component       TEXT NOT NULL,                 -- 'supabase', 'byrous_api', 'agent_A38', 'n8n', etc.
-    status          os.health_status NOT NULL,
+    status          TEXT NOT NULL
+                        CHECK (status IN ('healthy','degraded','unhealthy','unknown')),
     latency_ms      INTEGER,
     details         JSONB DEFAULT '{}',            -- info adicional: versión, métricas específicas
     error_message   TEXT,
@@ -570,29 +544,9 @@ CREATE TABLE os.health_checks (
 COMMENT ON TABLE os.health_checks IS 'Estado de salud de cada componente del sistema. Escrito periódicamente por el Observability Worker.';
 
 
--- -----------------------------------------------------------------------------
--- os.agent_metrics
--- KPIs operacionales agregados por agente y período.
--- Permite ver tendencias de rendimiento de cada agente.
--- -----------------------------------------------------------------------------
-CREATE TABLE os.agent_metrics (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    agent_id            UUID NOT NULL REFERENCES os.agents(id),
-    agent_code          TEXT NOT NULL,
-    period_start        TIMESTAMPTZ NOT NULL,
-    period_end          TIMESTAMPTZ NOT NULL,
-    period_type         TEXT NOT NULL DEFAULT 'hourly', -- 'hourly', 'daily', 'weekly'
-    tasks_completed     INTEGER NOT NULL DEFAULT 0,
-    tasks_failed        INTEGER NOT NULL DEFAULT 0,
-    tasks_escalated     INTEGER NOT NULL DEFAULT 0,
-    avg_duration_ms     INTEGER,
-    avg_confidence      NUMERIC(3,2),
-    governance_violations INTEGER NOT NULL DEFAULT 0,
-    rollbacks_triggered INTEGER NOT NULL DEFAULT 0,
-    computed_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-COMMENT ON TABLE os.agent_metrics IS 'KPIs operacionales por agente y período. Calculados por el Observability Worker. Insumo para A44 (Desempeño).';
+-- os.agent_metrics DIFERIDA A MIGRATION 002
+-- Requiere Observability Worker activo (Fase 2) para ser útil.
+-- Sin el worker que la llena, la tabla existe vacía sin propósito.
 
 
 -- -----------------------------------------------------------------------------
@@ -608,7 +562,8 @@ CREATE TABLE os.system_alerts (
     title           TEXT NOT NULL,
     description     TEXT NOT NULL,
     context         JSONB DEFAULT '{}',
-    status          os.alert_status NOT NULL DEFAULT 'open',
+    status          TEXT NOT NULL DEFAULT 'open'
+                        CHECK (status IN ('open','acknowledged','resolved','suppressed')),
     acknowledged_by TEXT,
     acknowledged_at TIMESTAMPTZ,
     resolved_by     TEXT,
@@ -674,11 +629,8 @@ CREATE TABLE sbr.monedas (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_monedas_updated_at
-    BEFORE UPDATE ON sbr.monedas
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
-
-INSERT INTO sbr.monedas (codigo, nombre, simbolo, tasa_a_dop, es_base) VALUES
+-- Triggers sbr.monedas → sbr.gastos_fijos diferidos a Fase 2.
+-- Sin operaciones comerciales en Fase 1, los updated_at no son necesarios todavía. (codigo, nombre, simbolo, tasa_a_dop, es_base) VALUES
     ('DOP', 'Peso Dominicano', 'RD$', 1.0000, TRUE),
     ('USD', 'Dólar Americano', '$',   60.0000, FALSE),
     ('EUR', 'Euro',            '€',   65.0000, FALSE),
@@ -701,9 +653,7 @@ CREATE TABLE sbr.proveedores (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_proveedores_updated_at
-    BEFORE UPDATE ON sbr.proveedores
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.proveedores diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -722,9 +672,7 @@ CREATE TABLE sbr.clientes (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_clientes_updated_at
-    BEFORE UPDATE ON sbr.clientes
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.clientes diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -745,9 +693,7 @@ CREATE TABLE sbr.productos (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_productos_updated_at
-    BEFORE UPDATE ON sbr.productos
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.productos diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -764,9 +710,7 @@ CREATE TABLE sbr.inventario (
     UNIQUE (producto_id, talla)
 );
 
-CREATE TRIGGER sbr_inventario_updated_at
-    BEFORE UPDATE ON sbr.inventario
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.inventario diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -810,9 +754,7 @@ CREATE TABLE sbr.liquidaciones (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_liquidaciones_updated_at
-    BEFORE UPDATE ON sbr.liquidaciones
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.liquidaciones diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -895,9 +837,7 @@ CREATE TABLE sbr.ventas (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_ventas_updated_at
-    BEFORE UPDATE ON sbr.ventas
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.ventas diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -935,9 +875,7 @@ CREATE TABLE sbr.cxc (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_cxc_updated_at
-    BEFORE UPDATE ON sbr.cxc
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.cxc diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -971,9 +909,7 @@ CREATE TABLE sbr.cxp (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_cxp_updated_at
-    BEFORE UPDATE ON sbr.cxp
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.cxp diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -1007,9 +943,7 @@ CREATE TABLE sbr.gastos_fijos (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TRIGGER sbr_gastos_fijos_updated_at
-    BEFORE UPDATE ON sbr.gastos_fijos
-    FOR EACH ROW EXECUTE FUNCTION os.set_updated_at();
+-- Trigger sbr.gastos_fijos diferido a Fase 2.
 
 
 -- -----------------------------------------------------------------------------
@@ -1073,6 +1007,7 @@ CREATE INDEX idx_sbr_cxc_estado            ON sbr.cxc(estado) WHERE estado IN ('
 CREATE INDEX idx_sbr_cxp_estado            ON sbr.cxp(estado) WHERE estado IN ('pendiente', 'parcial');
 CREATE INDEX idx_sbr_movimientos_fecha      ON sbr.movimientos(fecha DESC);
 CREATE INDEX idx_sbr_liquidaciones_estado   ON sbr.liquidaciones(estado);
+-- Índice de os.agent_metrics diferido a migration 002 junto con la tabla.
 
 
 -- =============================================================================
@@ -1110,37 +1045,39 @@ CREATE POLICY rollback_log_insert_only ON os.rollback_log
 CREATE POLICY decisions_log_insert_only ON os.decisions_log
     FOR INSERT WITH CHECK (TRUE);
 
--- SELECT abierto para todas las tablas (los agentes necesitan leer).
--- El control de escritura es el mecanismo de gobierno, no RLS granular por ahora.
-CREATE POLICY audit_log_select_all ON os.audit_log
-    FOR SELECT USING (TRUE);
-
-CREATE POLICY governance_violations_select_all ON os.governance_violations
-    FOR SELECT USING (TRUE);
-
-CREATE POLICY rollback_log_select_all ON os.rollback_log
-    FOR SELECT USING (TRUE);
-
-CREATE POLICY decisions_log_select_all ON os.decisions_log
-    FOR SELECT USING (TRUE);
+-- SELECT: controlado por service key en Fase 1.
+-- Políticas SELECT por rol de agente se agregan en Fase 3 cuando A38/A39 tengan roles de DB asignados.
 
 
 -- =============================================================================
--- FIN DE MIGRATION 001
+-- FIN DE MIGRATION 001 v2.0.0
 -- =============================================================================
 --
--- RESUMEN DEL SCHEMA:
+-- RESUMEN DEL SCHEMA (v2 — Minimal Viable Infrastructure):
 -- ┌─────────────────────────────────┬────────┬─────────────────────────────┐
 -- │ Grupo                           │ Tablas │ Schema                      │
 -- ├─────────────────────────────────┼────────┼─────────────────────────────┤
 -- │ Core OS                         │   5    │ os.*                        │
 -- │ Governance & Audit              │   4    │ os.*                        │
 -- │ Execution Runtime               │   5    │ os.*                        │
--- │ Observability                   │   4    │ os.*                        │
+-- │ Observability                   │   3    │ os.* (agent_metrics → 002)  │
 -- │ StyledByRous Pilot              │  20    │ sbr.*                       │
 -- ├─────────────────────────────────┼────────┼─────────────────────────────┤
--- │ TOTAL                           │  38    │                             │
+-- │ TOTAL                           │  37    │                             │
 -- └─────────────────────────────────┴────────┴─────────────────────────────┘
+--
+-- SIMPLIFICACIONES vs v1:
+--   Triggers:      18 → 7   (11 diferidos a Fase 2)
+--   ENUMs:          9 → 4   (5 convertidos a TEXT + CHECK)
+--   RLS policies:  11 → 7   (4 SELECT eliminadas)
+--   Tablas:        38 → 37  (os.agent_metrics → migration 002)
+--
+-- ENUMs ACTIVOS (4):
+--   os.autonomy_level, os.execution_status, os.severity, os.operational_mode
+--
+-- TRIGGERS ACTIVOS (7):
+--   os.agents, os.system_config, os.approval_requests,
+--   os.commands, os.dead_letter_queue, os.system_alerts, sbr.config
 --
 -- TABLAS APPEND-ONLY (nunca se modifican):
 --   os.audit_log, os.governance_violations, os.decisions_log,
