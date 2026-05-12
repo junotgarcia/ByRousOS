@@ -1,6 +1,6 @@
 # CONTROL CENTER — ByRousOS
-**Versión:** 1.1.0  
-**Última actualización:** 2026-05-11  
+**Versión:** v12.05.26-12pm  
+**Última actualización:** 2026-05-12  
 **Estado del sistema:** 🟡 CONSTRUCCIÓN — Sin operaciones comerciales activas  
 
 ---
@@ -39,9 +39,9 @@
 **Objetivo:** ByRousOS corriendo en producción con base de datos real y observabilidad activa.
 
 **Pasos (en orden estricto):**
-- [ ] 1. Crear proyecto en Supabase — base de datos PostgreSQL
-- [ ] 2. Migrar esquema de 19 tablas a Supabase (incluyendo `audit_log`)
-- [ ] 3. Conectar ByRousOS (Next.js) a Supabase
+- [x] 1. Crear proyecto en Supabase — base de datos PostgreSQL ✅ 2026-05-12
+- [x] 2. Ejecutar migration SQL en Supabase: `supabase/migrations/001_initial_schema.sql` (37 tablas: 17 os.* + 20 sbr.*) ✅ 2026-05-12
+- [x] 3. Conectar ByRousOS (Next.js) a Supabase ✅ 2026-05-12
 - [ ] 4. Activar endpoints de salud: `GET /api/health`, `GET /api/status`
 - [ ] 5. Configurar sistema de logs operacionales
 - [ ] 6. Configurar `audit_log` (append-only, nunca se modifica)
@@ -59,10 +59,10 @@
 > **Una sola cosa:** Ejecutar Fase 1 — levantar la infraestructura base en Supabase con observabilidad y audit_log antes de tocar cualquier otra cosa.
 
 **Secuencia de Fase 1 (en orden, sin saltarse pasos):**
-1. Crear proyecto Supabase + configurar credenciales seguras
-2. Escribir y ejecutar migration SQL: 19 tablas operacionales + `audit_log`
-3. Conectar ByRousOS (Next.js) a Supabase vía variables de entorno
-4. Implementar y verificar `GET /api/health` y `GET /api/status`
+1. ~~Crear proyecto Supabase + configurar credenciales seguras~~ ✅ 2026-05-12
+2. ~~Ejecutar migration SQL en Supabase~~ ✅ 2026-05-12 · 37 tablas · schemas `os` y `sbr` verificados
+3. ~~Conectar ByRousOS (Next.js) a Supabase~~ ✅ 2026-05-12 · commit `b43c406`
+4. Implementar y verificar `GET /api/health` y `GET /api/status` ← **PRÓXIMO**
 5. Configurar logs operacionales (30 días de retención)
 6. Verificar `audit_log` append-only funcionando
 7. Deploy a Vercel con variables de entorno de producción
@@ -99,10 +99,13 @@
 | `ByRousOS_Contexto_Maestro` | v1.1 | Repo ByRousOS / Project files | Estado global del sistema. Lectura obligatoria al inicio de cada sesión |
 | `ByRousOS_Plan_Maestro` | v4.0 | `ByRousOS_Plan_Maestro_v4.md` | Las 9 fases de construcción y operación |
 | `ByRousOS_Gobierno_Fase0` | v3.0 | Repo ByRousOS / Project files | Marco de gobierno, autonomía y criterios de readiness |
-| `CONTROL_CENTER.md` | v1.0.0 | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
+| `CONTROL_CENTER.md` | v12.05.26-12pm | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
+| `supabase/migrations/001_initial_schema.sql` | v2.0.0 | `junotgarcia/ByRousOS` · commit `5f50a63` | Schema inicial Fase 1 — 37 tablas OS-first (17 os.* + 20 sbr.*) |
 | `StyleByRous_EstructuraIA.docx` | — | Pendiente subir a repo | Roles, funciones y KPIs de los 45 agentes |
 
 > **Regla:** Estos documentos son la fuente de verdad. Cualquier decisión que contradiga estos documentos requiere aprobación del CEO y actualización explícita antes de ejecutarse.
+
+> **Estándar de versionado documental:** Todos los documentos operacionales de ByRousOS usan el formato `vDD.MM.YY-HHam/pm`. Ejemplo: `v12.05.26-12pm`. Todo archivo oficial descargable debe incluir la versión en el nombre del archivo, dentro del documento, y en el changelog si aplica. Las tres instancias deben ser idénticas. Regla completa en `TOOLS_AND_ENVIRONMENT.md` Sección 4.1.
 
 ---
 
@@ -168,25 +171,26 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 
 | Campo | Valor |
 |-------|-------|
-| Fecha | 2026-05-11 |
-| Acción | Cierre de Fase 0 · Apertura oficial de Fase 1 · Registro de aprobación CEO · Corrección de agentes activos |
-| Ejecutado por | ChatOperador |
-| Commit | `docs: close phase 0, open phase 1, register CEO approval` |
-| Autorización | Aprobación formal del CEO — 2026-05-11 |
+| Fecha | 2026-05-12 |
+| Acción | Paso 3 completado · ByRousOS conectado a Supabase · PostgreSQL directo para `os.*` · `/api/health` OK · `/api/status` OK |
+| Ejecutado por | ChatOperador + CEO |
+| Commit | `b43c406` — feat(infra): connect ByRousOS to Supabase and PostgreSQL — Phase 1 Step 3 |
+| Autorización | Aprobación CEO — 2026-05-12 |
+
+**Decisión arquitectónica registrada:** `os.*` accede por PostgreSQL directo server-side (`postgres.js`). PostgREST no se usa para el núcleo OS. `sbr.*` puede usar Supabase JS/PostgREST.
 
 ---
 
 ## 12. Próxima Acción Autorizada
 
-> **Acción:** Iniciar Fase 1 — Paso 1: crear proyecto en Supabase y generar el migration SQL completo (19 tablas operacionales + audit_log).
+> **Acción:** Fase 1 — Paso 4: logs operacionales mínimos y verificación de `audit_log` append-only.
 
 **Detalle:**
-- ChatEstratégico o ChatOperador redacta el schema PostgreSQL completo basado en las 19 tablas de `styledbyrous-server` + tabla `audit_log` nueva
-- El CEO crea el proyecto en Supabase (acción de nivel C — requiere cuenta y credenciales)
-- ChatOperador prepara el archivo de migration listo para ejecutar
-- Una vez creado el proyecto Supabase: conectar ByRousOS y continuar la secuencia
+- Implementar sistema de logs operacionales con retención de 30 días
+- Verificar que `os.audit_log` funciona correctamente en modo append-only
+- Sin lógica de negocio — solo infraestructura de observabilidad mínima
 
-**Quién ejecuta:** ChatOperador (genera migration SQL) → CEO (crea proyecto Supabase y ejecuta migration)
+**Quién ejecuta:** ChatOperador genera código → CEO ejecuta → CEO confirma
 
 ---
 
@@ -194,10 +198,11 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 
 | Bloqueo | Impacto | Desbloqueo |
 |---------|---------|------------|
-| Proyecto Supabase no creado | Bloquea toda la Fase 1 | CEO crea proyecto Supabase (requiere cuenta activa) |
-| ByRousOS no conectado a Supabase | Bloquea endpoints de salud y observabilidad | Requiere desbloqueo anterior |
-| `byrous-web` sin subir a GitHub | Código en riesgo (solo local) | Tarea pendiente de baja prioridad — subir cuando Fase 1 esté estable |
-| `styledbyrous-server` solo en localhost | Sin acceso desde iPhone/exterior | Se resuelve en Fase 1 al migrar a Supabase |
+| ~~Proyecto Supabase no creado~~ | ~~Bloquea Pasos 1 y 2~~ | ✅ Resuelto 2026-05-12 |
+| ~~Migration SQL pendiente~~ | ~~Bloquea Pasos 3–8~~ | ✅ Resuelto 2026-05-12 · 37 tablas verificadas |
+| ~~ByRousOS no conectado a Supabase~~ | ~~Bloquea endpoints~~ | ✅ Resuelto 2026-05-12 · commit `b43c406` |
+| `byrous-web` sin subir a GitHub | Código en riesgo (solo local) | Baja prioridad — subir cuando Fase 1 esté estable |
+| `styledbyrous-server` solo en localhost | Sin acceso desde iPhone/exterior | Se resuelve al completar Fase 1 |
 | Operaciones comerciales | ❌ BLOQUEADAS permanentemente hasta Fase 5 | Operational Readiness Gate (Fases 1–5 completas) |
 | Instagram / WhatsApp / canales externos | ❌ BLOQUEADOS permanentemente hasta Fase 7 | No se conectan antes de Fase 6 completada |
 
@@ -209,8 +214,11 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 |---------|-------|--------|-----|
 | 1.0.0 | 2026-05-11 | Creación inicial de CONTROL_CENTER.md | ChatOperador |
 | 1.1.0 | 2026-05-11 | Fase 0 cerrada · Aprobación CEO registrada · Fase 1 abierta · Agentes activos corregidos (A38, A39, A40, Executor Runtime Genérico) · Bloqueos actualizados · Prioridad estratégica actualizada | ChatOperador |
+| 1.2.0 | 2026-05-11 | Schema Fase 1 aprobado (OS-first, 37 tablas) · Migration commiteada `5f50a63` | ChatEstratégico |
+| v11.05.26-11pm | 2026-05-11 | Estándar de versionado documental adoptado · Regla de versionado agregada en Sección 6 | ChatOperador |
+| v12.05.26-12pm | 2026-05-12 | Pasos 1, 2 y 3 cerrados · proyecto `byrousos-core` operativo · `/api/health` OK · `/api/status` OK · decisión arquitectónica `os.*` vía PostgreSQL directo registrada · commit `b43c406` | ChatOperador |
 
 ---
 
-*ByRousOS · CONTROL_CENTER v1.1.0 · Mayo 2026 · Confidencial*  
+*ByRousOS · CONTROL_CENTER v12.05.26-12pm · Mayo 2026 · Confidencial*  
 *Próxima actualización obligatoria: al completar cualquier paso de Fase 1 o ejecutar cualquier acción de nivel B o superior.*
