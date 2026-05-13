@@ -1,5 +1,5 @@
 # CONTROL CENTER — ByRousOS
-**Versión:** v12.05.26-12pm.1  
+**Versión:** v12.05.26-2pm  
 **Última actualización:** 2026-05-12  
 **Estado del sistema:** 🟡 CONSTRUCCIÓN — Sin operaciones comerciales activas  
 
@@ -50,22 +50,21 @@
 
 **Criterio de completitud:** ByRousOS deployado, conectado a Supabase, con logs activos y endpoints de salud respondiendo correctamente. CEO verifica y aprueba cierre de Fase 1.
 
-**Prioridad inmediata dentro de Fase 1:** Supabase → PostgreSQL schema → audit_log → endpoints de salud → observabilidad mínima.
+**Prioridad inmediata dentro de Fase 1:** logs operacionales → validación append-only de `os.audit_log` → observabilidad mínima.
 
 ---
 
 ## 3. Prioridad Estratégica Actual
 
-> **Una sola cosa:** Ejecutar Fase 1 — levantar la infraestructura base en Supabase con observabilidad y audit_log antes de tocar cualquier otra cosa.
+> **Una sola cosa:** Ejecutar Fase 1 — observabilidad mínima, logging operacional y validación de `audit_log` antes de tocar cualquier otra cosa.
 
 **Secuencia de Fase 1 (en orden, sin saltarse pasos):**
 1. ~~Crear proyecto Supabase + configurar credenciales seguras~~ ✅ 2026-05-12
 2. ~~Ejecutar migration SQL en Supabase~~ ✅ 2026-05-12 · 37 tablas · schemas `os` y `sbr` verificados
 3. ~~Conectar ByRousOS (Next.js) a Supabase~~ ✅ 2026-05-12 · commit `b43c406` · `/api/health` OK · `/api/status` OK
 4. Configurar logs operacionales + verificar `audit_log` append-only ← **PRÓXIMO**
-5. ~~Implementar y verificar `GET /api/health` y `GET /api/status`~~ ✅ operativos
-6. Deploy a Vercel con variables de entorno de producción
-7. CEO verifica endpoints en vivo → Fase 1 cerrada → inicia Fase 2
+5. Deploy a Vercel con variables de entorno de producción
+6. CEO verifica endpoints en vivo → Fase 1 cerrada → inicia Fase 2
 
 ---
 
@@ -95,16 +94,17 @@
 
 | Documento | Versión | Ubicación | Propósito |
 |-----------|---------|-----------|-----------|
-| `ByRousOS_Contexto_Maestro` | v1.1 | Repo ByRousOS / Project files | Estado global del sistema. Lectura obligatoria al inicio de cada sesión |
-| `ByRousOS_Plan_Maestro` | v4.0 | `ByRousOS_Plan_Maestro_v4.md` | Las 9 fases de construcción y operación |
+| `CURRENT_SYSTEM_STATE` | v12.05.26-12pm.1 | Repo ByRousOS / Project files | **Snapshot estratégico oficial vigente.** Estado global del sistema. Lectura obligatoria al inicio de cada sesión. Owned por ChatEstratégico. |
+| `ByRousOS_Plan_Maestro` | v4.1 | `ByRousOS_Plan_Maestro_v4.1.md` | Las 9 fases de construcción y operación |
 | `ByRousOS_Gobierno_Fase0` | v4.1 · 2026-05-12 | Repo ByRousOS / Project files | Marco de gobierno, autonomía, criterios de readiness y Document Governance Model |
-| `CONTROL_CENTER.md` | v12.05.26-12pm.1 | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
+| `CONTROL_CENTER.md` | v12.05.26-2pm | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
+| `TOOLS_AND_ENVIRONMENT.md` | v12.05.26-12pm | Repo ByRousOS / Project files | Herramientas, entornos y reglas operacionales |
 | `supabase/migrations/001_initial_schema.sql` | v2.0.0 | `junotgarcia/ByRousOS` · commit `5f50a63` | Schema inicial Fase 1 — 37 tablas OS-first (17 os.* + 20 sbr.*) |
 | `StyleByRous_EstructuraIA.docx` | — | Pendiente subir a repo | Roles, funciones y KPIs de los 45 agentes |
 
 > **Regla:** Estos documentos son la fuente de verdad. Cualquier decisión que contradiga estos documentos requiere aprobación del CEO y actualización explícita antes de ejecutarse.
 
-> **Estándar de versionado documental:** Todos los documentos operacionales de ByRousOS usan el formato `vDD.MM.YY-HHam/pm`. Ejemplo: `v12.05.26-12pm`. Todo archivo oficial descargable debe incluir la versión en el nombre del archivo, dentro del documento, y en el changelog si aplica. Las tres instancias deben ser idénticas. Regla completa en `TOOLS_AND_ENVIRONMENT.md` Sección 4.1.
+> **Estándar de versionado documental:** Todos los documentos operacionales de ByRousOS usan el formato `vDD.MM.YY-HHam/pm`. Todo archivo oficial descargable debe incluir la versión en el nombre del archivo, dentro del documento, y en el changelog si aplica. Las tres instancias deben ser idénticas. Regla completa en `TOOLS_AND_ENVIRONMENT.md` Sección 4.1.
 
 > **Document Governance Model** (Gobierno_Fase0 §11): CONTROL_CENTER — Owner: ChatOP · Validator: ChatES · Approval: CEO. CURRENT_SYSTEM_STATE — Owner: ChatES · Validator: ChatOP · Approval: CEO. Plan Maestro — Owner: ChatES · Validator: CEO · Approval: CEO. Gobierno_Fase0 — Owner: CEO (Maintainer: ChatES) · Validator: ChatOP · Approval: CEO. TOOLS_AND_ENVIRONMENT — Owner: ChatOP · Validator: ChatES · Approval: CEO.
 
@@ -175,23 +175,32 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | Campo | Valor |
 |-------|-------|
 | Fecha | 2026-05-12 |
-| Acción | Paso 3 completado · ByRousOS conectado a Supabase · PostgreSQL directo para `os.*` · `/api/health` OK · `/api/status` OK |
-| Ejecutado por | ChatOperador + CEO |
-| Commit | `b43c406` — feat(infra): connect ByRousOS to Supabase and PostgreSQL — Phase 1 Step 3 |
-| Autorización | Aprobación CEO — 2026-05-12 |
-
-**Decisión arquitectónica registrada:** `os.*` accede por PostgreSQL directo server-side (`postgres.js`). PostgREST no se usa para el núcleo OS. `sbr.*` puede usar Supabase JS/PostgREST.
+| Acción | Corrección documental — eliminación de referencia obsoleta a `ByRousOS_Contexto_Maestro` · establecimiento explícito de `CURRENT_SYSTEM_STATE` como snapshot estratégico oficial · alineación estricta con Gobierno_Fase0 §11 |
+| Ejecutado por | ChatOperador |
+| Commit | pendiente — CEO ejecuta |
+| Autorización | Instrucción directa del CEO — 2026-05-12 |
 
 ---
 
 ## 12. Próxima Acción Autorizada
 
-> **Acción:** Fase 1 — Paso 4: logs operacionales mínimos y verificación de `audit_log` append-only.
+> **Acción:** Fase 1 — Paso 4: observabilidad mínima + logging operacional + validación append-only de `audit_log`.
 
-**Detalle:**
-- Implementar sistema de logs operacionales con retención de 30 días
-- Verificar que `os.audit_log` funciona correctamente en modo append-only
-- Sin lógica de negocio — solo infraestructura de observabilidad mínima
+**Alcance permitido:**
+- Observabilidad mínima
+- Logging operacional con middleware
+- Correlation/request IDs
+- Timestamps
+- Persistencia mínima de eventos
+- Validación append-only de `os.audit_log`
+
+**Restricciones obligatorias:**
+- ❌ NO agentes
+- ❌ NO autonomía
+- ❌ NO n8n runtime
+- ❌ NO workflows complejos
+- ❌ NO lógica comercial
+- ❌ NO orchestration avanzada
 
 **Quién ejecuta:** ChatOperador genera código → CEO ejecuta → CEO confirma
 
@@ -216,13 +225,14 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | Versión | Fecha | Cambio | Por |
 |---------|-------|--------|-----|
 | 1.0.0 | 2026-05-11 | Creación inicial de CONTROL_CENTER.md | ChatOperador |
-| 1.1.0 | 2026-05-11 | Fase 0 cerrada · Aprobación CEO registrada · Fase 1 abierta · Agentes activos corregidos (A38, A39, A40, Executor Runtime Genérico) · Bloqueos actualizados · Prioridad estratégica actualizada | ChatOperador |
-| 1.2.0 | 2026-05-11 | Schema Fase 1 aprobado (OS-first, 37 tablas) · Migration commiteada `5f50a63` | ChatEstratégico |
-| v11.05.26-11pm | 2026-05-11 | Estándar de versionado documental adoptado · Regla de versionado agregada en Sección 6 | ChatOperador |
-| v12.05.26-12pm | 2026-05-12 | Pasos 1, 2 y 3 cerrados · proyecto `byrousos-core` operativo · `/api/health` OK · `/api/status` OK · decisión arquitectónica `os.*` vía PostgreSQL directo registrada · commit `b43c406` | ChatOperador |
-| v12.05.26-12pm.1 | 2026-05-12 | Sección 6 alineada al Document Governance Model (Gobierno_Fase0 v4.1) · Gobierno_Fase0 actualizado a v4.1 · Paso 3 expandido con endpoints y arquitectura · secuencia de Fase 1 corregida | ChatOperador |
+| 1.1.0 | 2026-05-11 | Fase 0 cerrada · Aprobación CEO registrada · Fase 1 abierta | ChatOperador |
+| 1.2.0 | 2026-05-11 | Schema Fase 1 aprobado · Migration commiteada `5f50a63` | ChatEstratégico |
+| v11.05.26-11pm | 2026-05-11 | Estándar de versionado documental adoptado | ChatOperador |
+| v12.05.26-12pm | 2026-05-12 | Pasos 1, 2 y 3 cerrados · `/api/health` OK · `/api/status` OK · commit `b43c406` | ChatOperador |
+| v12.05.26-12pm.1 | 2026-05-12 | Sección 6 alineada al Document Governance Model · Gobierno_Fase0 v4.1 | ChatOperador |
+| v12.05.26-2pm | 2026-05-12 | Corrección documental: referencia obsoleta `ByRousOS_Contexto_Maestro` eliminada · `CURRENT_SYSTEM_STATE` establecido como snapshot estratégico oficial vigente · Sección 12 actualizada con alcance y restricciones de Paso 4 · alineación estricta con Gobierno_Fase0 §11 | ChatOperador |
 
 ---
 
-*ByRousOS · CONTROL_CENTER v12.05.26-12pm.1 · Mayo 2026 · Confidencial*  
+*ByRousOS · CONTROL_CENTER v12.05.26-2pm · Mayo 2026 · Confidencial*  
 *Próxima actualización obligatoria: al completar cualquier paso de Fase 1 o ejecutar cualquier acción de nivel B o superior.*
