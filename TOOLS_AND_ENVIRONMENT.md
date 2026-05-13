@@ -1,16 +1,17 @@
 # TOOLS AND ENVIRONMENT — ByRousOS
-**ChatOperador — Awareness Operacional Permanente**  
-**Versión:** v12.05.26-4pm  
-**Fecha:** 2026-05-12  
-**Estado:** 🔴 LECTURA OBLIGATORIA al inicio de cada sesión  
+**ChatOperador — Awareness Operacional Permanente**
+**Versión:** v4.2
+**Fecha:** 2026-05-13
+**Commit:** 36c9be1
+**Estado:** 🔴 LECTURA OBLIGATORIA al inicio de cada sesión
 
 ---
 
 ## ⚠ Advertencia Crítica
 
-> Nada es oficial hasta que existe en el filesystem real, está en Git real, y está pusheado a GitHub.  
-> Un archivo creado en el sandbox de chat NO EXISTE para el proyecto.  
-> Un commit sin remote NO EXISTE para el proyecto.  
+> Nada es oficial hasta que existe en el filesystem real, está en Git real, y está pusheado a GitHub.
+> Un archivo creado en el sandbox de chat NO EXISTE para el proyecto.
+> Un commit sin remote NO EXISTE para el proyecto.
 > Reportar algo como "hecho" sin persistencia real verificada es un error de gobierno.
 
 ---
@@ -78,22 +79,24 @@
 | Acceso real | Solo vía terminal del CEO, Claude Code, o VS Code Tunnel |
 | Fuente de verdad | ✅ GitHub es la única fuente de verdad de persistencia de código |
 | Verificación | El CEO confirma commit hash en GitHub → ChatOperador lo registra |
-| Último commit oficial | `76efb42` — `feat(observability): add operational logger, audit writer, request middleware and observability endpoint -- Phase 1 Step 4` |
+| Último commit oficial | `36c9be1` — `fix(audit): verify append-only enforcement with transaction -- Phase 1 Step 6` |
 
 ### 1.7 Chrome / Browser (Claude in Chrome)
 
 | Atributo | Valor |
 |----------|-------|
 | Qué es | Extensión de Claude que controla el navegador del CEO |
-| Estado actual | ✅ Operacional — confirmado 2026-05-12 |
+| Estado actual | ✅ Operacional — confirmado 2026-05-13 |
 | Browser activo | Edge (Windows) · deviceId `fc7f0c64` |
 | Supabase | ✅ Navegable y operable — dashboard, SQL Editor accesibles |
-| Capacidad verificada | Navegación, screenshots, ejecución de queries de verificación |
+| Vercel | ⚠ Bloqueado por proxy de red — ChatOP no puede navegar vercel.com directamente |
+| Capacidad verificada | Navegación, screenshots, ejecución de queries SQL en Supabase, VS Code Tunnel |
 | Limitación 1 | Inestabilidad parcial con Monaco Editor (SQL Editor de Supabase) — tabs_context_mcp funciona pero interacción pesada puede degradarse |
 | Limitación 2 | Acciones pesadas (screenshot + click secuencial) pueden causar timeout — reintentar o simplificar la secuencia |
 | Limitación 3 | No introduce credenciales ni ejecuta acciones irreversibles — requiere confirmación del CEO |
 | Limitación 4 | URI schemes custom (`vscode://`, `file://`) bloqueados por proxy de red |
-| Uso correcto | Verificación de estado, navegación guiada, queries de lectura, asistencia paso a paso, acceso a VS Code Tunnel |
+| Limitación 5 | vercel.com bloqueado por proxy — validación de endpoints requiere CEO o curl directo |
+| Uso correcto | Verificación de estado, navegación guiada, queries SQL en Supabase, acceso a VS Code Tunnel |
 
 ### 1.8 VS Code Tunnel — `byrousos`
 
@@ -106,14 +109,27 @@
 | Terminal | ✅ PowerShell real — puede ejecutar git, npm, scripts |
 | Git | ✅ Acceso real — commit y push a GitHub verificados |
 | Persistencia | ✅ Real — lo que se ejecuta aquí persiste en el repo |
-| Estado | ✅ Operacional — confirmado 2026-05-12 · usado para integración real del Paso 4 |
+| Estado | ✅ Operacional — confirmado 2026-05-13 · usado para Pasos 4, 5 y 6 de Fase 1 |
 | Sintaxis terminal | PowerShell — usar `;` como separador, NO `&&` |
 | Limitación 1 | Timeout de extensión Chrome bajo operación pesada — reconectar con `tabs_context_mcp` |
 | Limitación 2 | Modales de Copilot/GitHub AI pueden bloquear la vista — cerrar antes de operar |
 | Limitación 3 | `localhost:3000` del dev server NO es accesible via tunnel — usar IP de red o Vercel |
 | Limitación 4 | `Invoke-WebRequest` desde terminal del tunnel apunta al servidor remoto, no a la máquina local |
+| Limitación 5 | Tab puede congelarse durante operaciones pesadas (npm build) — esperar recuperación o recargar |
 | Uso correcto | Integración real de archivos, commits reales, git push, verificación de estado del repo |
 | Uso incorrecto | Asumir que `localhost` del tunnel = `localhost` del CEO |
+
+### 1.9 Vercel — `by-rous-os`
+
+| Atributo | Valor |
+|----------|-------|
+| Qué es | Plataforma de deploy para ByRousOS (Next.js) |
+| URL producción | https://by-rous-os.vercel.app |
+| Estado | ✅ Operacional — confirmado 2026-05-13 |
+| Deploy | Automático en cada push a `main` |
+| Variables configuradas | `DATABASE_URL` · `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` · `SUPABASE_SERVICE_ROLE_KEY` |
+| Acceso desde chat | ❌ vercel.com bloqueado por proxy — CEO gestiona directamente |
+| Lección aprendida | Build falló por encoding UTF-16 en archivo TypeScript — usar siempre UTF-8 sin BOM para escritura de archivos desde PowerShell |
 
 ---
 
@@ -142,7 +158,7 @@
 │                 │ • ⚠ Solo persiste si el CEO descarga      │
 ├─────────────────┼───────────────────────────────────────────┤
 │ VS Code Tunnel  │ • https://vscode.dev/tunnel/byrousos      │
-│ (NUEVO)         │ • Filesystem real del CEO                 │
+│                 │ • Filesystem real del CEO                 │
 │                 │ • Terminal PowerShell real                │
 │                 │ • Git real con remote a GitHub            │
 │                 │ • ✅ Persiste — es la realidad            │
@@ -152,6 +168,11 @@
 │ (CEO + Claude   │ • Git con remote a GitHub                 │
 │  Code)          │ • ✅ Persiste — es la realidad            │
 │                 │ • ÚNICA fuente de verdad operacional      │
+├─────────────────┼───────────────────────────────────────────┤
+│ Vercel          │ • https://by-rous-os.vercel.app           │
+│                 │ • Deploy automático desde main            │
+│                 │ • ✅ Operacional desde 2026-05-13         │
+│                 │ • Variables de entorno configuradas       │
 ├─────────────────┼───────────────────────────────────────────┤
 │ GitHub          │ • Repositorios remotos reales             │
 │                 │ • ✅ Persiste — es el estado oficial      │
@@ -215,110 +236,68 @@ git log --oneline -3
 | `mkdir -p a/b/c` | `New-Item -ItemType Directory -Force a/b/c` |
 | `cat archivo` | `Get-Content archivo` |
 | `echo "texto" > archivo` | `"texto" \| Set-Content archivo` |
-| Heredoc `<< 'EOF'` | `@'...'@ \| Set-Content archivo` |
+| Heredoc `<< 'EOF'` | NO usar — introduce encoding incorrecto |
+| `tail -n 5` | `Select-Object -Last 5` |
 
-### 3.5 Limitación Conocida — localhost
+### 3.5 Regla Crítica — Encoding de Archivos
+
+```
+NUNCA usar PowerShell heredoc (@'...'@) con Set-Content para
+escribir archivos TypeScript o código fuente.
+
+PowerShell Set-Content y Out-File usan UTF-16 por defecto
+en algunos contextos — esto rompe el build de Next.js/Vercel.
+
+MÉTODO CORRECTO para modificar archivos de código:
+- Usar node script externo (.js) con fs.writeFileSync(..., 'utf8')
+- Generar el script en bash_tool (garantiza ASCII/UTF-8)
+- CEO descarga y copia el script al repo
+- ChatOP ejecuta: node .\script.js desde el tunnel
+- Verificar con npm run build antes de commit
+
+LECCIÓN APRENDIDA (2026-05-13):
+  Intento con PowerShell heredoc → build falló en Vercel
+  con "stream did not contain valid UTF-8" y caracteres
+  de control invisibles (\u{206d}).
+  Corrección: git checkout commit_sano -- archivo.ts
+  + node script UTF-8 limpio generado en bash_tool.
+```
+
+### 3.6 Limitación Conocida — localhost
 
 El dev server (`npm run dev`) corre en `localhost:3000` de la **máquina del CEO**, no del servidor del tunnel. Para validar endpoints del dev server:
 
 - ✅ El CEO abre `http://localhost:3000/api/...` en su browser local
 - ❌ `Invoke-WebRequest http://localhost:3000/...` desde la terminal del tunnel **no funciona**
-- ✅ Para acceso externo: usar la URL de Vercel una vez deployado
+- ✅ Para acceso externo: usar la URL de Vercel: https://by-rous-os.vercel.app
 
 ---
 
-## 4. Cómo Verificar Conectividad Real Antes de Ejecutar
-
-Antes de cualquier tarea que implique Git o persistencia, ejecutar esta verificación:
-
-### 4.1 Comandos de verificación (en terminal real del CEO, Claude Code, o VS Code Tunnel):
-
-```bash
-# 1. ¿Dónde estoy?
-pwd
-# Esperado: C:\Users\junot\Documents\ByRousOS
-
-# 2. ¿Tengo remote configurado?
-git remote -v
-# Esperado: origin  https://github.com/junotgarcia/ByRousOS.git (fetch/push)
-
-# 3. ¿En qué estado está el repo?
-git status
-# Esperado: rama limpia o con cambios pendientes — nunca "no remote"
-
-# 4. ¿En qué rama estoy?
-git branch
-# Esperado: * main
-
-# 5. ¿Cuál es el último commit real?
-git log --oneline -5
-# Esperado: commits que coincidan con los registrados en CONTROL_CENTER.md
-```
-
-### 4.2 Criterios de confirmación:
-
-| Verificación | Resultado esperado | Si falla |
-|---|---|---|
-| `pwd` | Ruta real en máquina del CEO | Detener — no estás en el repo correcto |
-| `git remote -v` | URL de GitHub visible | Detener — repo sin remote no es oficial |
-| `git status` | Rama activa, sin errores | Investigar antes de continuar |
-| `git branch` | Rama correcta activa | Cambiar de rama antes de continuar |
-| `git log` | Commits coinciden con CONTROL_CENTER | Investigar discrepancia |
-
----
-
-## 5. Regla Operacional Obligatoria — Nada es Oficial Hasta
-
-Para que cualquier cambio sea considerado **oficial y persistente**, debe cumplir las tres condiciones:
+## 4. Regla Operacional Obligatoria — Nada es Oficial Hasta
 
 ```
 CONDICIÓN 1: Existe en filesystem real
-    → El archivo está en el disco local del CEO, en la carpeta del repo
-
 CONDICIÓN 2: Está en Git real con commit
-    → git add + git commit ejecutados en el repo local real
-    → El commit tiene mensaje descriptivo y autor correcto
-
 CONDICIÓN 3: Está pusheado a GitHub
-    → git push ejecutado
-    → Commit hash verificable en github.com/junotgarcia/ByRousOS
 
 SIN LAS TRES CONDICIONES = NO OFICIAL = NO EXISTE PARA EL PROYECTO
 ```
 
-**Corolario:** ChatOperador NUNCA reporta un cambio como "hecho" o "commiteado" basándose en acciones del sandbox. Solo registra como oficial lo que el CEO confirma desde su entorno real, o lo que ChatOperador ejecuta directamente via VS Code Tunnel con push verificado.
+---
+
+## 4.1 Regla Operacional Obligatoria — Versionado de Archivos
+
+**Formato oficial vigente:** `vN.N · YYYY-MM-DD · commitHash`
+
+El commit hash de GitHub es la trazabilidad temporal oficial.
+
+Formato anterior `vDD.MM.YY-HHam/pm` queda deprecado — no usar en documentos nuevos.
 
 ---
 
-## 5.1 Regla Operacional Obligatoria — Versionado de Archivos
-
-Todo archivo generado para descarga debe incluir la versión en el nombre del archivo, dentro del documento, y en el changelog si aplica. Las tres instancias deben ser idénticas.
-
-**Formato oficial:** `NOMBRE_vDD.MM.YY-HHam/pm.ext`
+## 5. Flujo Correcto de Trabajo
 
 ```
-NOMBRE DEL ARCHIVO:   CONTROL_CENTER_v12.05.26-4pm.md
-DENTRO DEL DOCUMENTO: **Versión:** v12.05.26-4pm
-EN EL CHANGELOG:      | v12.05.26-4pm | 2026-05-12 | ... |
-```
-
-**Alcance — aplica a:**
-- Documentos operacionales (`CONTROL_CENTER.md`, `TOOLS_AND_ENVIRONMENT.md`)
-- Documentos maestros (`ByRousOS_Plan_Maestro`, `ByRousOS_Gobierno_Fase0`)
-- Migrations SQL
-- Cualquier output descargable generado en sesión
-
-**Regla de consistencia:** Si la versión del nombre del archivo no coincide con la versión dentro del documento, el archivo no es oficial.
-
----
-
-## 6. Flujo Correcto de Trabajo
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  FLUJO OFICIAL DE TRABAJO                    │
-└─────────────────────────────────────────────────────────────┘
-
 VÍA SANDBOX (documentos/borradores):
 PASO 1 — ChatOperador genera en el chat
 PASO 2 — CEO lleva al filesystem real
@@ -334,18 +313,24 @@ PASO 4 — ChatOperador crea/modifica archivos reales en terminal
 PASO 5 — ChatOperador ejecuta git add + git commit + git push
 PASO 6 — ChatOperador confirma push y registra hash en CONTROL_CENTER
 
-⚠ En ambos flujos: sin push verificado = NO OFICIAL
+VÍA NODE SCRIPT (modificación de código fuente):
+PASO 1 — ChatOperador genera script .js en bash_tool (UTF-8 garantizado)
+PASO 2 — CEO descarga script y lo copia al repo
+PASO 3 — ChatOperador ejecuta: node .\script.js desde tunnel
+PASO 4 — ChatOperador ejecuta npm run build para verificar
+PASO 5 — Si build pasa: Remove-Item script + git add + commit + push
+PASO 6 — ChatOperador confirma push y registra hash
+
+⚠ En todos los flujos: sin push verificado = NO OFICIAL
 ```
 
 ---
 
-## 7. Checklist Obligatorio al Iniciar Sesión
-
-ChatOperador ejecuta este checklist mentalmente al inicio de cada sesión antes de tomar cualquier acción:
+## 6. Checklist Obligatorio al Iniciar Sesión
 
 ```
-□ 1. ¿Leí CONTROL_CENTER.md del Project? (fase activa, último cambio, próxima acción)
-□ 2. ¿Leí el Contexto Maestro actualizado?
+□ 1. ¿Leí CONTROL_CENTER.md del Project? (fase activa, último commit, próxima acción)
+□ 2. ¿Leí CURRENT_SYSTEM_STATE actualizado?
 □ 3. ¿El CEO confirmó conectividad real al repo? (git remote -v desde su terminal o VS Code Tunnel)
 □ 4. ¿Tengo claro qué es sandbox y qué es real en esta sesión?
 □ 5. ¿La tarea que voy a ejecutar requiere persistencia real?
@@ -353,11 +338,12 @@ ChatOperador ejecuta este checklist mentalmente al inicio de cada sesión antes 
       → Si no: ¿está claro que el output es temporal/borrador?
 □ 6. ¿Hay bloqueos activos en CONTROL_CENTER que impidan la tarea?
 □ 7. ¿La tarea es nivel A (puedo hacer solo) o requiere aprobación CEO?
+□ 8. ¿Si voy a modificar archivos de código, usaré node script UTF-8 en lugar de PowerShell heredoc?
 ```
 
 ---
 
-## 8. Resumen — Qué Puede y No Puede Hacer ChatOperador
+## 7. Resumen — Qué Puede y No Puede Hacer ChatOperador
 
 | Acción | ChatOperador puede | Quién ejecuta realmente |
 |--------|-------------------|------------------------|
@@ -367,9 +353,12 @@ ChatOperador ejecuta este checklist mentalmente al inicio de cada sesión antes 
 | Crear archivos reales en repo | ✅ Sí (vía VS Code Tunnel) | ChatOperador via Tunnel |
 | Hacer commit real a GitHub | ✅ Sí (vía VS Code Tunnel) | ChatOperador via Tunnel |
 | Hacer push a GitHub | ✅ Sí (vía VS Code Tunnel) | ChatOperador via Tunnel |
+| Modificar archivos TypeScript | ✅ Vía node script UTF-8 | ChatOperador via Tunnel |
+| Ejecutar SQL en Supabase | ✅ Vía SQL Editor Chrome (con autorización CEO) | Claude in Chrome |
 | Leer Project Files | ✅ Sí | ChatOperador |
 | Escribir en Project Files | ❌ No (read-only) | CEO (sube manualmente) |
 | Navegar GitHub/Supabase/n8n | ⚠ Solo con Chrome extension activa | Claude in Chrome |
+| Navegar vercel.com | ❌ Bloqueado por proxy | CEO directamente |
 | Acceder a VS Code Tunnel | ✅ Vía Claude in Chrome | Claude in Chrome |
 | Registrar commit como oficial | Tras push verificado vía Tunnel o CEO | ChatOperador registra |
 
@@ -377,12 +366,13 @@ ChatOperador ejecuta este checklist mentalmente al inicio de cada sesión antes 
 
 ## Changelog
 
-| Versión | Fecha | Cambio |
-|---------|-------|--------|
-| v12.05.26-12pm | 2026-05-12 | Versión inicial — herramientas, entornos, reglas operacionales |
-| v12.05.26-4pm | 2026-05-12 | Sección 1.8 añadida: VS Code Tunnel `byrousos` · Sección 3 añadida: workflow, activación, verificación, sintaxis PS, limitación localhost · Tabla de entornos actualizada con Tunnel · Sección 8 actualizada con capacidades reales via Tunnel · Último commit oficial actualizado a `76efb42` |
+| Versión | Fecha | Commit | Cambio |
+|---------|-------|--------|--------|
+| v12.05.26-12pm | 2026-05-12 | — | Versión inicial — herramientas, entornos, reglas operacionales |
+| v12.05.26-4pm | 2026-05-12 | `76efb42` | VS Code Tunnel `byrousos` · workflow completo · sintaxis PS · limitación localhost |
+| v4.2 | 2026-05-13 | `36c9be1` | Sección 1.9 añadida: Vercel operativo · lección encoding PowerShell → UTF-16 bug · node script como método oficial · Sección 3.5 regla encoding · Sección 3.6 localhost · flujo via node script añadido · checklist actualizado · tabla resumen actualizada |
 
 ---
 
-*ByRousOS · TOOLS_AND_ENVIRONMENT v12.05.26-4pm · Mayo 2026 · Confidencial*  
+*ByRousOS · TOOLS_AND_ENVIRONMENT v4.2 · 2026-05-13 · commit 36c9be1 · Confidencial*
 *Este documento no se modifica sin aprobación del CEO. Es una regla de gobierno, no una preferencia operacional.*
