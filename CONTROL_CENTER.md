@@ -1,5 +1,5 @@
 # CONTROL CENTER — ByRousOS
-**Versión:** v12.05.26-2pm  
+**Versión:** v12.05.26-4pm  
 **Última actualización:** 2026-05-12  
 **Estado del sistema:** 🟡 CONSTRUCCIÓN — Sin operaciones comerciales activas  
 
@@ -42,28 +42,26 @@
 - [x] 1. Crear proyecto en Supabase — base de datos PostgreSQL ✅ 2026-05-12
 - [x] 2. Ejecutar migration SQL en Supabase: `supabase/migrations/001_initial_schema.sql` (37 tablas: 17 os.* + 20 sbr.*) ✅ 2026-05-12
 - [x] 3. Conectar ByRousOS (Next.js) a Supabase ✅ 2026-05-12 · os.* vía PostgreSQL directo · PostgREST no usado para núcleo OS · `/api/health` ✅ · `/api/status` ✅
-- [ ] 4. Configurar observabilidad: logs operacionales + audit_log append-only
-- [ ] 5. Configurar sistema de logs operacionales
-- [ ] 6. Configurar `audit_log` (append-only, nunca se modifica)
-- [ ] 7. Deploy de ByRousOS en Vercel
-- [ ] 8. Verificación final: el sistema respira, los datos fluyen, los logs se generan
+- [x] 4. Observabilidad mínima + audit_log append-only ✅ 2026-05-12 · commit `76efb42` · logger operacional · middleware · correlation IDs · `/api/observability/status` · escritura real a `os.audit_log` validada
+- [ ] 5. Deploy de ByRousOS en Vercel + variables de entorno de producción
+- [ ] 6. Verificación final en producción: endpoints vivos, logs reales, audit_log append-only con `service_role`
 
-**Criterio de completitud:** ByRousOS deployado, conectado a Supabase, con logs activos y endpoints de salud respondiendo correctamente. CEO verifica y aprueba cierre de Fase 1.
+**Criterio de completitud:** ByRousOS deployado en Vercel, conectado a Supabase producción, con logs activos y `/api/observability/status` retornando `operational`. CEO verifica y aprueba cierre de Fase 1.
 
-**Prioridad inmediata dentro de Fase 1:** logs operacionales → validación append-only de `os.audit_log` → observabilidad mínima.
+**Prioridad inmediata dentro de Fase 1:** deploy a Vercel → verificación final en producción.
 
 ---
 
 ## 3. Prioridad Estratégica Actual
 
-> **Una sola cosa:** Ejecutar Fase 1 — observabilidad mínima, logging operacional y validación de `audit_log` antes de tocar cualquier otra cosa.
+> **Una sola cosa:** Deploy a Vercel y verificación final de Fase 1 en producción.
 
 **Secuencia de Fase 1 (en orden, sin saltarse pasos):**
 1. ~~Crear proyecto Supabase + configurar credenciales seguras~~ ✅ 2026-05-12
 2. ~~Ejecutar migration SQL en Supabase~~ ✅ 2026-05-12 · 37 tablas · schemas `os` y `sbr` verificados
 3. ~~Conectar ByRousOS (Next.js) a Supabase~~ ✅ 2026-05-12 · commit `b43c406` · `/api/health` OK · `/api/status` OK
-4. Configurar logs operacionales + verificar `audit_log` append-only ← **PRÓXIMO**
-5. Deploy a Vercel con variables de entorno de producción
+4. ~~Observabilidad mínima~~ ✅ 2026-05-12 · commit `76efb42` · logger · middleware · audit_log · `/api/observability/status`
+5. Deploy a Vercel con variables de entorno de producción ← **PRÓXIMO**
 6. CEO verifica endpoints en vivo → Fase 1 cerrada → inicia Fase 2
 
 ---
@@ -97,8 +95,8 @@
 | `CURRENT_SYSTEM_STATE` | v12.05.26-12pm.1 | Repo ByRousOS / Project files | **Snapshot estratégico oficial vigente.** Estado global del sistema. Lectura obligatoria al inicio de cada sesión. Owned por ChatEstratégico. |
 | `ByRousOS_Plan_Maestro` | v4.1 | `ByRousOS_Plan_Maestro_v4.1.md` | Las 9 fases de construcción y operación |
 | `ByRousOS_Gobierno_Fase0` | v4.1 · 2026-05-12 | Repo ByRousOS / Project files | Marco de gobierno, autonomía, criterios de readiness y Document Governance Model |
-| `CONTROL_CENTER.md` | v12.05.26-2pm | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
-| `TOOLS_AND_ENVIRONMENT.md` | v12.05.26-12pm | Repo ByRousOS / Project files | Herramientas, entornos y reglas operacionales |
+| `CONTROL_CENTER.md` | v12.05.26-4pm | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
+| `TOOLS_AND_ENVIRONMENT.md` | v12.05.26-4pm | Repo ByRousOS / Project files | Herramientas, entornos y reglas operacionales · incluye VS Code Tunnel workflow |
 | `supabase/migrations/001_initial_schema.sql` | v2.0.0 | `junotgarcia/ByRousOS` · commit `5f50a63` | Schema inicial Fase 1 — 37 tablas OS-first (17 os.* + 20 sbr.*) |
 | `StyleByRous_EstructuraIA.docx` | — | Pendiente subir a repo | Roles, funciones y KPIs de los 45 agentes |
 
@@ -175,24 +173,24 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | Campo | Valor |
 |-------|-------|
 | Fecha | 2026-05-12 |
-| Acción | Corrección documental — eliminación de referencia obsoleta a `ByRousOS_Contexto_Maestro` · establecimiento explícito de `CURRENT_SYSTEM_STATE` como snapshot estratégico oficial · alineación estricta con Gobierno_Fase0 §11 |
-| Ejecutado por | ChatOperador |
-| Commit | pendiente — CEO ejecuta |
+| Acción | Fase 1 Paso 4 completado — observabilidad mínima integrada en repo real vía VS Code Tunnel · logger operacional · middleware con correlation IDs · escritura real a `os.audit_log` · endpoint `/api/observability/status` activo · drift documental resuelto (`CURRENT_SYSTEM_STATE.md.md` eliminado) |
+| Ejecutado por | ChatOperador vía VS Code Tunnel `byrousos` |
+| Commit | `76efb42` — `feat(observability): add operational logger, audit writer, request middleware and observability endpoint -- Phase 1 Step 4` |
+| Push | ✅ `1c82321..76efb42 main -> main` |
+| Validación endpoint | `/api/observability/status` → `degraded` esperado en local (superuser no bloqueado por RLS) · `operational` esperado en Vercel con `service_role` |
 | Autorización | Instrucción directa del CEO — 2026-05-12 |
 
 ---
 
 ## 12. Próxima Acción Autorizada
 
-> **Acción:** Fase 1 — Paso 4: observabilidad mínima + logging operacional + validación append-only de `audit_log`.
+> **Acción:** Fase 1 — Paso 5: Deploy a Vercel + verificación final en producción.
 
 **Alcance permitido:**
-- Observabilidad mínima
-- Logging operacional con middleware
-- Correlation/request IDs
-- Timestamps
-- Persistencia mínima de eventos
-- Validación append-only de `os.audit_log`
+- Deploy del repo `junotgarcia/ByRousOS` a Vercel
+- Configurar variables de entorno de producción (`DATABASE_URL`, etc.)
+- Verificar `/api/health`, `/api/status`, `/api/observability/status` en producción
+- Confirmar `auditLogAppendOnly: true` con `service_role` en Supabase prod
 
 **Restricciones obligatorias:**
 - ❌ NO agentes
@@ -202,7 +200,7 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 - ❌ NO lógica comercial
 - ❌ NO orchestration avanzada
 
-**Quién ejecuta:** ChatOperador genera código → CEO ejecuta → CEO confirma
+**Quién ejecuta:** CEO conecta repo a Vercel → ChatOperador asiste si se requiere → CEO confirma endpoints
 
 ---
 
@@ -213,6 +211,8 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | ~~Proyecto Supabase no creado~~ | ~~Bloquea Pasos 1 y 2~~ | ✅ Resuelto 2026-05-12 |
 | ~~Migration SQL pendiente~~ | ~~Bloquea Pasos 3–8~~ | ✅ Resuelto 2026-05-12 · 37 tablas verificadas |
 | ~~ByRousOS no conectado a Supabase~~ | ~~Bloquea endpoints~~ | ✅ Resuelto 2026-05-12 · commit `b43c406` |
+| ~~Observabilidad mínima pendiente~~ | ~~Bloquea Paso 4~~ | ✅ Resuelto 2026-05-12 · commit `76efb42` |
+| Deploy a Vercel pendiente | Bloquea verificación final y cierre de Fase 1 | Paso 5 — requiere acción del CEO |
 | `byrous-web` sin subir a GitHub | Código en riesgo (solo local) | Baja prioridad — subir cuando Fase 1 esté estable |
 | `styledbyrous-server` solo en localhost | Sin acceso desde iPhone/exterior | Se resuelve al completar Fase 1 |
 | Operaciones comerciales | ❌ BLOQUEADAS permanentemente hasta Fase 5 | Operational Readiness Gate (Fases 1–5 completas) |
@@ -230,9 +230,10 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | v11.05.26-11pm | 2026-05-11 | Estándar de versionado documental adoptado | ChatOperador |
 | v12.05.26-12pm | 2026-05-12 | Pasos 1, 2 y 3 cerrados · `/api/health` OK · `/api/status` OK · commit `b43c406` | ChatOperador |
 | v12.05.26-12pm.1 | 2026-05-12 | Sección 6 alineada al Document Governance Model · Gobierno_Fase0 v4.1 | ChatOperador |
-| v12.05.26-2pm | 2026-05-12 | Corrección documental: referencia obsoleta `ByRousOS_Contexto_Maestro` eliminada · `CURRENT_SYSTEM_STATE` establecido como snapshot estratégico oficial vigente · Sección 12 actualizada con alcance y restricciones de Paso 4 · alineación estricta con Gobierno_Fase0 §11 | ChatOperador |
+| v12.05.26-2pm | 2026-05-12 | Corrección documental: referencia obsoleta `ByRousOS_Contexto_Maestro` eliminada · `CURRENT_SYSTEM_STATE` establecido como snapshot estratégico oficial vigente · alineación estricta con Gobierno_Fase0 §11 | ChatOperador |
+| v12.05.26-4pm | 2026-05-12 | Paso 4 completado · commit `76efb42` · logger operacional · middleware · correlation IDs · audit_log writes reales · `/api/observability/status` activo · drift documental resuelto · VS Code Tunnel workflow establecido · próximo: deploy Vercel | ChatOperador |
 
 ---
 
-*ByRousOS · CONTROL_CENTER v12.05.26-2pm · Mayo 2026 · Confidencial*  
+*ByRousOS · CONTROL_CENTER v12.05.26-4pm · Mayo 2026 · Confidencial*  
 *Próxima actualización obligatoria: al completar cualquier paso de Fase 1 o ejecutar cualquier acción de nivel B o superior.*
