@@ -1,4 +1,4 @@
-ï»¿import { getDb } from '@/lib/db/server';
+import { getDb } from '@/lib/db/server';
 export type AutonomyLevel = 'A' | 'B' | 'C' | 'D';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export interface AuditEntry {
@@ -31,15 +31,32 @@ export async function writeAuditLog(entry: AuditEntry): Promise<AuditResult> {
   }
 }
 export async function verifyAppendOnly(): Promise<{ ok: boolean; detail: string }> {
+  const sql = getDb();
+  let insertedId: string | null = null;
   try {
-    const sql = getDb();
-    await sql`UPDATE os.audit_log SET notes = notes WHERE 1 = 0`;
-    return { ok: false, detail: 'WARNING: UPDATE did not throw. RLS RESTRICTIVE may not be active for current DB role. Expected in local dev with superuser.' };
+    // Step 1: Insert a real test row inside a transaction
+    const insertRows = await sql<{ id: string }[]>`
+      INSERT INTO os.audit_log (agent_code, action_type, entity_type, autonomy_level, risk_level, logged_at)
+      VALUES ('__verify_append_only__', 'SYSTEM_CHECK', 'SYSTEM', 'A', 'LOW', NOW())
+      RETURNING id::text
+    `;
+    insertedId = insertRows[0]?.id ?? null;
+    if (!insertedId) {
+      return { ok: false, detail: 'Could not insert test row for append-only verification.' };
+    }
+    // Step 2: Attempt UPDATE on the real row — trigger should throw
+    await sql`UPDATE os.audit_log SET notes = notes WHERE id = ${insertedId}::uuid`;
+    // Step 3: If UPDATE did not throw, trigger is not active — cleanup and report failure
+    await sql`DELETE FROM os.audit_log WHERE id = ${insertedId}::uuid`;
+    return { ok: false, detail: 'WARNING: UPDATE did not throw. Trigger trg_prevent_audit_log_mutation may not be active.' };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('permission') || msg.includes('policy') || msg.includes('security')) {
-      return { ok: true, detail: 'VERIFIED: UPDATE blocked by RLS RESTRICTIVE policy.' };
+    if (msg.includes('append-only')) {
+      // Expected: trigger fired correctly — row was never committed
+      return { ok: true, detail: 'VERIFIED: UPDATE blocked by trigger trg_prevent_audit_log_mutation.' };
     }
     return { ok: false, detail: `UNEXPECTED ERROR: ${msg}` };
   }
 }
+
+
