@@ -1,7 +1,7 @@
-# CONTROL CENTER — ByRousOS
-**Versión:** v4.3
+﻿# CONTROL CENTER — ByRousOS
+**Versión:** v4.4
 **Fecha:** 2026-05-13
-**Commit:** c57d318
+
 **Estado del sistema:** 🟡 CONSTRUCCIÓN — Sin operaciones comerciales activas
 
 ---
@@ -10,7 +10,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| Fase activa | **Ninguna — Fase 1 cerrada · Fase 2 pendiente de apertura formal** |
+| Fase activa | **Ninguna — Fase 1 cerrada · Fase 2 pendiente de definición de alcance, aprobación CEO y validación ChatES** |
 | Fase anterior | ✅ Fase 1 — Cerrada formalmente por CEO (2026-05-13) |
 | Modo operacional | Construcción del sistema operativo |
 | URL producción | https://by-rous-os.vercel.app |
@@ -77,7 +77,7 @@ Para abrir Fase 2 se requiere:
 
 ## 3. Prioridad Estratégica Actual
 
-> **Estado:** Fase 1 cerrada formalmente. Documentación estratégica publicada. Esperando apertura formal de Fase 2 por CEO + ChatES.
+> **Estado:** Fase 1 cerrada formalmente. Documentación de gobierno completa. Fase 2 pendiente de definición de alcance, aprobación CEO y validación ChatES.
 
 **Validación producción confirmada (2026-05-13):**
 
@@ -119,7 +119,7 @@ Para abrir Fase 2 se requiere:
 | `Plan_Maestro.md` | v4.2 · 2026-05-13 · `c57d318` | Repo ByRousOS (raíz) | Las 9 fases de construcción y operación |
 | `ByRousOS_Gobierno_Fase0` | v4.1 · 2026-05-12 | Repo ByRousOS / Project files | Marco de gobierno, autonomía, criterios de readiness y Document Governance Model |
 | `CONTROL_CENTER.md` | v4.3 · 2026-05-13 · `c57d318` | `ByRousOS/` (raíz) | Este archivo — coordinación operacional centralizada |
-| `TOOLS_AND_ENVIRONMENT.md` | v4.2 · 2026-05-13 · `36c9be1` | Repo ByRousOS / Project files | Herramientas, entornos y reglas operacionales |
+| `TOOLS_AND_ENVIRONMENT.md` | v4.3 · 2026-05-13 · `14d54f8` | Repo ByRousOS / Project files | Herramientas, entornos y reglas operacionales |
 | `supabase/migrations/001_initial_schema.sql` | v2.0.0 | `junotgarcia/ByRousOS` · commit `5f50a63` | Schema inicial Fase 1 — 37 tablas OS-first |
 | `supabase/migrations/002_audit_log_append_only_trigger.sql` | v1.0.0 | `junotgarcia/ByRousOS` · commit `3834f27` | Trigger append-only en os.audit_log |
 | `StyleByRous_EstructuraIA.docx` | — | Pendiente subir a repo | Roles, funciones y KPIs de los 45 agentes |
@@ -199,7 +199,7 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 | Acción | Publicación documental estratégica post-cierre Fase 1 — CURRENT_SYSTEM_STATE v4.2 y Plan_Maestro v4.2 commiteados en repo real |
 | Ejecutado por | ChatOperador vía PowerShell local guiado por CEO |
 | Commit final | `c57d318` — `docs: add CURRENT_SYSTEM_STATE v4.2 and Plan_Maestro v4.2 — Phase 1 officially closed` |
-| Push | ✅ `b31ab5d..c57d318 main -> main` |
+| Push | ✅ `b7b24fb..14d54f8 main -> main` |
 | URL producción | https://by-rous-os.vercel.app |
 | Autorización | ChatES + CEO — 2026-05-13 |
 
@@ -207,7 +207,7 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 
 ## 12. Próxima Acción Autorizada
 
-> **Estado:** Documentación estratégica publicada. Fase 1 cerrada. Esperando apertura formal de Fase 2.
+> **Estado:** Documentación de gobierno completa. Fase 2 pendiente de definición de alcance, aprobación CEO y validación ChatES.
 
 **Para CEO — acción requerida:**
 
@@ -269,5 +269,5 @@ Confirmar apertura de Fase 2 con alcance explícito de ChatES.
 
 ---
 
-*ByRousOS · CONTROL_CENTER v4.3 · 2026-05-13 · commit c57d318 · Confidencial*
+*ByRousOS · CONTROL_CENTER v4.4 · 2026-05-13 · commit pendiente · Confidencial*
 *Próxima actualización obligatoria: al abrir Fase 2 formalmente o al ejecutar cualquier acción de nivel B o superior.*
