@@ -1,7 +1,9 @@
 // lib/execution/command-intake.ts
 // Phase 2.1 — Execution Core Basic
 // Governance: audit_log write BEFORE os.commands insert.
-// command_id generated once — used in both audit_log.entity_id and os.commands.id
+// audit_log.id captured and passed into os.commands.audit_log_id.
+// audit_log.command_id set to command_id for full traceability.
+// agent_id nullable from Phase 2.1 (migration 003).
 // No real execution. No agents. No autonomy. No external channels.
 
 import { getDb } from '@/lib/db/server'
@@ -48,14 +50,15 @@ export async function intakeCommand(
 ): Promise<CommandIntakeResult> {
   const sql = getDb()
   const command_id = randomUUID()
-  const correlation_id = input.correlation_id ?? randomUUID()
   const confidence_score = input.confidence_score ?? 1.0
   const autonomy_level = classifyAutonomyLevel(input.type, confidence_score)
   const { governance_passed, status } = applyGovernance(autonomy_level)
 
   // 1. Write audit_log BEFORE inserting command (governance: logs before actions)
+  // command_id included in audit_log for full traceability audit_log <-> os.commands
+  let audit_log_id: string | null = null
   try {
-    await sql`
+    const auditRows = await sql`
       INSERT INTO os.audit_log (
         entity_type,
         entity_id,
@@ -64,8 +67,8 @@ export async function intakeCommand(
         confidence_score,
         agent_code,
         risk_level,
-        state_after,
         command_id,
+        state_after,
         notes
       ) VALUES (
         'os.commands',
@@ -75,17 +78,19 @@ export async function intakeCommand(
         ${confidence_score},
         'system',
         'LOW',
+        ${command_id}::uuid,
         ${JSON.stringify({
           command_id,
-          type: input.type,
+          command_type: input.type,
           payload: input.payload,
           governance_passed,
           status,
         })}::jsonb,
-        ${command_id}::uuid,
         ${'Phase 2.1 — command intake — governance middleware'}
       )
+      RETURNING id
     `
+    audit_log_id = auditRows[0]?.id ?? null
   } catch (auditError) {
     return {
       success: false,
@@ -93,27 +98,33 @@ export async function intakeCommand(
     }
   }
 
-  // 2. Insert command into os.commands using same command_id
+  // 2. Insert command into os.commands (agent_id nullable per migration 003)
   try {
     await sql`
       INSERT INTO os.commands (
         id,
-        type,
+        command_type,
+        target_entity,
         payload,
         autonomy_level,
         confidence_score,
+        risk_level,
         governance_passed,
         status,
-        correlation_id
+        agent_code,
+        audit_log_id
       ) VALUES (
         ${command_id}::uuid,
         ${input.type},
+        'os.commands',
         ${JSON.stringify(input.payload)}::jsonb,
         ${autonomy_level},
         ${confidence_score},
+        'LOW',
         ${governance_passed},
         ${status},
-        ${correlation_id}
+        'system',
+        ${audit_log_id}::uuid
       )
     `
 
@@ -139,9 +150,9 @@ export async function getCommand(id: string) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      id, type, payload, autonomy_level, confidence_score,
-      governance_passed, status, created_at, updated_at,
-      executed_at, error_message, correlation_id
+      id, command_type, target_entity, payload, autonomy_level,
+      confidence_score, risk_level, governance_passed, status,
+      agent_code, created_at, updated_at, audit_log_id
     FROM os.commands
     WHERE id = ${id}::uuid
     LIMIT 1
@@ -156,8 +167,8 @@ export async function listCommands(limit = 20, offset = 0) {
   const sql = getDb()
   const rows = await sql`
     SELECT
-      id, type, autonomy_level, confidence_score,
-      governance_passed, status, created_at, correlation_id
+      id, command_type, target_entity, autonomy_level,
+      confidence_score, governance_passed, status, created_at
     FROM os.commands
     ORDER BY created_at DESC
     LIMIT ${limit}
