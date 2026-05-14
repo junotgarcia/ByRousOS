@@ -1,6 +1,6 @@
 ﻿# CONTROL CENTER — ByRousOS
-**Versión:** v4.4
-**Fecha:** 2026-05-13
+**Versión:** v4.5
+**Fecha:** 2026-05-14
 
 **Estado del sistema:** 🟡 CONSTRUCCIÓN — Sin operaciones comerciales activas
 
@@ -10,7 +10,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| Fase activa | **Ninguna — Fase 1 cerrada · Fase 2 pendiente de definición de alcance, aprobación CEO y validación ChatES** |
+| Fase activa | **Fase 2 — Execution Core Básico · Abierta formalmente 2026-05-14 · Aprobación CEO** |
 | Fase anterior | ✅ Fase 1 — Cerrada formalmente por CEO (2026-05-13) |
 | Modo operacional | Construcción del sistema operativo |
 | URL producción | https://by-rous-os.vercel.app |
@@ -63,15 +63,25 @@
 
 ---
 
-### ⏳ FASE 2 — Execution Core Básico — PENDIENTE DE APERTURA FORMAL
+### 🔵 FASE 2 — Execution Core Básico — ABIERTA FORMALMENTE (2026-05-14)
 
-**Estado:** NO abierta automáticamente.
+**Aprobación CEO:** ✅ Formal — 2026-05-14
 
-Para abrir Fase 2 se requiere:
-1. Aprobación explícita CEO.
-2. Alcance definido por ChatES.
-3. Restricciones confirmadas.
-4. Orden operativo a ChatOP.
+**Alcance autorizado:**
+- Command intake controlado
+- Clasificación de comandos A/B/C/D
+- audit_log antes de ejecución
+- Estado persistente de comandos
+- Executor limitado y verificable
+- Manejo de errores controlado
+- Trazabilidad de principio a fin
+
+**Restricciones activas:**
+- ❌ NO agentes reales
+- ❌ NO autonomía real
+- ❌ NO n8n runtime
+- ❌ NO canales externos
+- ❌ NO lógica comercial
 
 ---
 
@@ -195,28 +205,21 @@ ChatEstratégico es la instancia de Claude orientada a **decisiones de arquitect
 
 | Campo | Valor |
 |-------|-------|
-| Fecha | 2026-05-13 |
-| Acción | Publicación documental estratégica post-cierre Fase 1 — CURRENT_SYSTEM_STATE v4.2 y Plan_Maestro v4.2 commiteados en repo real |
-| Ejecutado por | ChatOperador vía PowerShell local guiado por CEO |
-| Commit final | `c57d318` — `docs: add CURRENT_SYSTEM_STATE v4.2 and Plan_Maestro v4.2 — Phase 1 officially closed` |
-| Push | ✅ `b7b24fb..14d54f8 main -> main` |
-| URL producción | https://by-rous-os.vercel.app |
-| Autorización | ChatES + CEO — 2026-05-13 |
+| Fecha | 2026-05-14 |
+| Acción | Apertura formal Fase 2 — Execution Core Básico — registro en CONTROL_CENTER |
+| Ejecutado por | ChatOperador vía VS Code Tunnel |
+| Commit final | pendiente |
+| Autorización | CEO — 2026-05-14 |
 
 ---
 
 ## 12. Próxima Acción Autorizada
 
-> **Estado:** Documentación de gobierno completa. Fase 2 pendiente de definición de alcance, aprobación CEO y validación ChatES.
-
-**Para CEO — acción requerida:**
-
-Confirmar apertura de Fase 2 con alcance explícito de ChatES.
+> **Estado:** Fase 2 abierta formalmente. Execution Core Básico en construcción.
 
 **Restricciones vigentes:**
-- ❌ NO Fase 2 sin aprobación explícita CEO + alcance ChatES
-- ❌ NO agentes
-- ❌ NO autonomía
+- ❌ NO agentes reales
+- ❌ NO autonomía real
 - ❌ NO n8n runtime
 - ❌ NO lógica comercial
 - ❌ NO canales externos
@@ -266,8 +269,9 @@ Confirmar apertura de Fase 2 con alcance explícito de ChatES.
 | v12.05.26-4pm | 2026-05-12 | `76efb42` | Paso 4 completado · observabilidad · audit_log · VS Code Tunnel | ChatOperador |
 | v4.2 | 2026-05-13 | `36c9be1` | Pasos 5 y 6 completados · Vercel deploy · trigger append-only · validación producción | ChatOperador |
 | v4.3 | 2026-05-13 | `c57d318` | Fase 1 cerrada formalmente · CURRENT_SYSTEM_STATE v4.2 · Plan_Maestro v4.2 publicados · Fase 2 pendiente apertura formal | ChatOperador |
+| v4.5 | 2026-05-14 | pendiente | Fase 2 abierta formalmente · Execution Core Básico · alcance y restricciones registrados | ChatOperador |
 
 ---
 
-*ByRousOS · CONTROL_CENTER v4.4 · 2026-05-13 · commit pendiente · Confidencial*
-*Próxima actualización obligatoria: al abrir Fase 2 formalmente o al ejecutar cualquier acción de nivel B o superior.*
+*ByRousOS · CONTROL_CENTER v4.5 · 2026-05-14 · commit pendiente · Confidencial*
+*Próxima actualización obligatoria: al completar primera tarea de Fase 2 o al ejecutar cualquier acción de nivel B o superior.*
