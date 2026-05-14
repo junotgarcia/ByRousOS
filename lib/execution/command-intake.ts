@@ -47,7 +47,6 @@ export async function intakeCommand(
   input: CreateCommandInput
 ): Promise<CommandIntakeResult> {
   const sql = getDb()
-  // Generate IDs once — command_id used in both audit_log.entity_id and os.commands.id
   const command_id = randomUUID()
   const correlation_id = input.correlation_id ?? randomUUID()
   const confidence_score = input.confidence_score ?? 1.0
@@ -60,32 +59,34 @@ export async function intakeCommand(
       INSERT INTO os.audit_log (
         entity_type,
         entity_id,
-        action,
+        action_type,
         autonomy_level,
-        actor_type,
-        new_value,
-        correlation_id,
+        confidence_score,
+        agent_code,
+        risk_level,
+        state_after,
+        command_id,
         notes
       ) VALUES (
         'os.commands',
-        ${command_id}::uuid,
+        ${command_id},
         'command_intake',
         ${autonomy_level},
+        ${confidence_score},
         'system',
+        'LOW',
         ${JSON.stringify({
           command_id,
           type: input.type,
           payload: input.payload,
-          confidence_score,
           governance_passed,
           status,
         })}::jsonb,
-        ${correlation_id},
+        ${command_id}::uuid,
         ${'Phase 2.1 — command intake — governance middleware'}
       )
     `
   } catch (auditError) {
-    // Governance rule: if audit_log write fails, do NOT proceed
     return {
       success: false,
       error: `audit_log write failed — command not created: ${String(auditError)}`,
