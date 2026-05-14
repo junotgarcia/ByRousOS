@@ -1,8 +1,8 @@
 # TOOLS AND ENVIRONMENT — ByRousOS
 **ChatOperador — Awareness Operacional Permanente**
-**Versión:** v4.2
+**Versión:** v4.3
 **Fecha:** 2026-05-13
-**Commit:** 36c9be1
+**Commit:** pendiente
 **Estado:** 🔴 LECTURA OBLIGATORIA al inicio de cada sesión
 
 ---
@@ -67,7 +67,7 @@
 | Atributo | Valor |
 |----------|-------|
 | Qué es | Terminal real del CEO — Windows CMD, PowerShell o Git Bash |
-| Acceso desde este chat | ❌ Ninguno — ChatOperador NO puede ejecutar comandos aquí |
+| Acceso desde este chat | ChatOP puede guiar y validar comandos ejecutados por el CEO. Si VS Code Tunnel está estable, puede ejecutar directamente. Si no, usa PowerShell local guiado. |
 | Git | Acceso real al repo local y a GitHub remote |
 | Uso correcto | El CEO copia y ejecuta comandos que ChatOperador proporciona |
 
@@ -79,7 +79,7 @@
 | Acceso real | Solo vía terminal del CEO, Claude Code, o VS Code Tunnel |
 | Fuente de verdad | ✅ GitHub es la única fuente de verdad de persistencia de código |
 | Verificación | El CEO confirma commit hash en GitHub → ChatOperador lo registra |
-| Último commit oficial | `36c9be1` — `fix(audit): verify append-only enforcement with transaction -- Phase 1 Step 6` |
+| Último commit oficial | `b7b24fb` — `docs: publish Governance Phase 0 markdown v4.2` |
 
 ### 1.7 Chrome / Browser (Claude in Chrome)
 
@@ -89,13 +89,13 @@
 | Estado actual | ✅ Operacional — confirmado 2026-05-13 |
 | Browser activo | Edge (Windows) · deviceId `fc7f0c64` |
 | Supabase | ✅ Navegable y operable — dashboard, SQL Editor accesibles |
-| Vercel | ⚠ Bloqueado por proxy de red — ChatOP no puede navegar vercel.com directamente |
+| Vercel | ✅ Accesible vía navegador cuando sesión/conexión esté disponible; si falla proxy/login/sesión, pedir al CEO revisar pantalla específica. Secretos excluidos. |
 | Capacidad verificada | Navegación, screenshots, ejecución de queries SQL en Supabase, VS Code Tunnel |
 | Limitación 1 | Inestabilidad parcial con Monaco Editor (SQL Editor de Supabase) — tabs_context_mcp funciona pero interacción pesada puede degradarse |
 | Limitación 2 | Acciones pesadas (screenshot + click secuencial) pueden causar timeout — reintentar o simplificar la secuencia |
 | Limitación 3 | No introduce credenciales ni ejecuta acciones irreversibles — requiere confirmación del CEO |
 | Limitación 4 | URI schemes custom (`vscode://`, `file://`) bloqueados por proxy de red |
-| Limitación 5 | vercel.com bloqueado por proxy — validación de endpoints requiere CEO o curl directo |
+| Limitación 5 | Si Vercel falla por conexión, proxy, login o sesión, ChatOP debe pedir al CEO revisar la pantalla específica y continuar guiado. Secretos excluidos. |
 | Uso correcto | Verificación de estado, navegación guiada, queries SQL en Supabase, acceso a VS Code Tunnel |
 
 ### 1.8 VS Code Tunnel — `byrousos`
@@ -128,7 +128,7 @@
 | Estado | ✅ Operacional — confirmado 2026-05-13 |
 | Deploy | Automático en cada push a `main` |
 | Variables configuradas | `DATABASE_URL` · `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` · `SUPABASE_SERVICE_ROLE_KEY` |
-| Acceso desde chat | ❌ vercel.com bloqueado por proxy — CEO gestiona directamente |
+| Acceso desde chat | ChatOP puede acceder a Vercel vía navegador cuando la sesión/conexión esté disponible. Si aparece error de conexión, proxy, login o sesión, ChatOP debe pedir al CEO revisar la pantalla específica y continuar guiado. Secretos y llaves nunca se leen ni se copian en chat. |
 | Lección aprendida | Build falló por encoding UTF-16 en archivo TypeScript — usar siempre UTF-8 sin BOM para escritura de archivos desde PowerShell |
 
 ---
@@ -321,12 +321,87 @@ PASO 4 — ChatOperador ejecuta npm run build para verificar
 PASO 5 — Si build pasa: Remove-Item script + git add + commit + push
 PASO 6 — ChatOperador confirma push y registra hash
 
+VÍA POWERSHELL LOCAL GUIADO (fallback cuando VS Code Tunnel falla):
+PASO 1 — ChatOP indica al CEO abrir nueva ventana PowerShell
+PASO 2 — ChatOP indica: cd C:\Users\junot\Documents\ByRousOS
+PASO 3 — ChatOP proporciona comandos uno a uno
+PASO 4 — CEO ejecuta y pega output en el chat
+PASO 5 — ChatOP valida output y da siguiente comando
+PASO 6 — ChatOP confirma push y registra hash
+
 ⚠ En todos los flujos: sin push verificado = NO OFICIAL
 ```
 
 ---
 
-## 6. Checklist Obligatorio al Iniciar Sesión
+## 6. Guided Tool-Opening Protocol
+
+ChatOP no debe asumir que el CEO tiene abiertas las herramientas necesarias.
+
+Antes de cualquier tarea que requiera herramientas externas, ChatOP debe indicar al CEO:
+
+1. **Qué aplicación abrir** — PowerShell, VS Code, navegador, etc.
+2. **Qué sitio, pantalla o proyecto seleccionar** — URL exacta, carpeta, proyecto Supabase, repo GitHub.
+3. **Qué credencial o secreto NO compartir** — API keys, DATABASE_URL, tokens, contraseñas.
+4. **Qué botón o sección buscar** — terminal, SQL Editor, explorador de archivos, etc.
+5. **Qué NO tocar** — archivos de código, variables de entorno, Supabase en producción, Vercel.
+6. **Cuándo detenerse y confirmar** — antes de ejecutar cualquier comando, ChatOP espera confirmación del CEO.
+
+### 6.0 Principio de Herramienta Mínima Necesaria
+
+Al inicio de cada sesión o tarea operativa, ChatOP debe identificar únicamente las herramientas necesarias para esa tarea específica.
+
+ChatOP NO debe pedir abrir, activar o validar todas las herramientas por defecto.
+
+Ejemplos:
+
+- Si la tarea requiere repo real → pedir PowerShell local o VS Code Tunnel.
+- Si la tarea requiere servidor local → pedir activar el servidor correspondiente.
+- Si la tarea requiere validar producción → pedir navegador o endpoint público.
+- Si la tarea requiere Vercel → pedir abrir Vercel y confirmar proyecto/pantalla.
+- Si la tarea requiere Supabase → pedir abrir Supabase y esperar autorización explícita.
+- Si la tarea requiere Project Files → indicar que el CEO debe subir/reemplazar manualmente.
+
+Regla:
+
+Una tarea = herramientas mínimas necesarias.
+
+No pedir tunnel, servidor, navegador, Vercel, Supabase o GitHub si la tarea no los requiere.
+
+---
+
+### 6.1 Aplica a
+
+| Herramienta | Protocolo mínimo |
+|---|---|
+| VS Code Tunnel | Confirmar tunnel activo + carpeta ByRousOS abierta + terminal con prompt correcto |
+| PowerShell / terminal | Confirmar prompt en `C:\Users\junot\Documents\ByRousOS>` |
+| GitHub | No acceso directo — CEO confirma commit hash |
+| Vercel | Confirmar proyecto/pantalla Vercel; ChatOP puede operar/guiar con autorización CEO; secretos excluidos; si falla conexión/login/proxy, pedir revisión específica al CEO |
+| Supabase | Confirmar proyecto `byrousos-core` · solo con autorización SQL explícita |
+| Navegador | Confirmar URL correcta antes de interactuar |
+| Project Files | Read-only — solo lectura, nunca escritura |
+| Repo local | Confirmar `git remote -v` + `git status` antes de modificar |
+| Reemplazo documental | Confirmar nombre exacto del archivo antes de reemplazar |
+| Validaciones / deploy | Solo con autorización CEO explícita |
+
+### 6.2 Regla de Espera
+
+No avanzar a comandos hasta que el CEO confirme que está en la pantalla o prompt correcto.
+
+### 6.3 Fallback — VS Code Tunnel falla
+
+Si VS Code Tunnel no conecta o está inestable:
+
+1. ChatOP indica al CEO cerrar la pestaña del tunnel.
+2. ChatOP pide al CEO abrir una nueva ventana de PowerShell local.
+3. ChatOP guía mediante comandos copiables uno a uno.
+4. CEO ejecuta y pega output en el chat.
+5. ChatOP valida y continúa.
+
+---
+
+## 7. Checklist Obligatorio al Iniciar Sesión
 
 ```
 □ 1. ¿Leí CONTROL_CENTER.md del Project? (fase activa, último commit, próxima acción)
@@ -339,11 +414,12 @@ PASO 6 — ChatOperador confirma push y registra hash
 □ 6. ¿Hay bloqueos activos en CONTROL_CENTER que impidan la tarea?
 □ 7. ¿La tarea es nivel A (puedo hacer solo) o requiere aprobación CEO?
 □ 8. ¿Si voy a modificar archivos de código, usaré node script UTF-8 en lugar de PowerShell heredoc?
+□ 9. ¿Apliqué Guided Tool-Opening Protocol antes de pedir herramientas al CEO?
 ```
 
 ---
 
-## 7. Resumen — Qué Puede y No Puede Hacer ChatOperador
+## 8. Resumen — Qué Puede y No Puede Hacer ChatOperador
 
 | Acción | ChatOperador puede | Quién ejecuta realmente |
 |--------|-------------------|------------------------|
@@ -358,9 +434,23 @@ PASO 6 — ChatOperador confirma push y registra hash
 | Leer Project Files | ✅ Sí | ChatOperador |
 | Escribir en Project Files | ❌ No (read-only) | CEO (sube manualmente) |
 | Navegar GitHub/Supabase/n8n | ⚠ Solo con Chrome extension activa | Claude in Chrome |
-| Navegar vercel.com | ❌ Bloqueado por proxy | CEO directamente |
+| Navegar Vercel | ✅ Sí, con autorización CEO y sesión activa; secretos excluidos | ChatOP opera/guía, CEO confirma acciones sensibles |
 | Acceder a VS Code Tunnel | ✅ Vía Claude in Chrome | Claude in Chrome |
 | Registrar commit como oficial | Tras push verificado vía Tunnel o CEO | ChatOperador registra |
+| Asumir herramientas abiertas | ❌ Nunca — aplicar Guided Tool-Opening Protocol | ChatOperador guía |
+
+---
+
+## 9. Pendientes Estratégicos Futuros
+
+Registrados como futuros. NO activos. NO modifican fase actual.
+
+| Pendiente | Descripción | Condición de activación |
+|---|---|---|
+| `byrousos_runtime` least-privilege | Crear rol PostgreSQL con permisos mínimos para runtime | Antes de activar agentes/autonomía real |
+| Cybersecurity Governance Capability | Threat modeling, secrets management, runtime permissions, RLS, API security, prompt injection defense, agent permission audits, incident response | Antes de Fase 3 |
+| Command Handoff Layer | ChatES → command queue → CEO aprueba → ChatOP ejecuta → audit_log registra | Fase futura por definir |
+| Model Provider Layer | Capa provider-agnostic: OpenAI, Anthropic, otros. ByRousOS orquesta; los modelos solo proveen inteligencia. No integrar OpenAI API todavía. | Fase futura por definir |
 
 ---
 
@@ -371,8 +461,9 @@ PASO 6 — ChatOperador confirma push y registra hash
 | v12.05.26-12pm | 2026-05-12 | — | Versión inicial — herramientas, entornos, reglas operacionales |
 | v12.05.26-4pm | 2026-05-12 | `76efb42` | VS Code Tunnel `byrousos` · workflow completo · sintaxis PS · limitación localhost |
 | v4.2 | 2026-05-13 | `36c9be1` | Sección 1.9 añadida: Vercel operativo · lección encoding PowerShell → UTF-16 bug · node script como método oficial · Sección 3.5 regla encoding · Sección 3.6 localhost · flujo via node script añadido · checklist actualizado · tabla resumen actualizada |
+| v4.3 | 2026-05-13 | pendiente | Sección 6 añadida: Guided Tool-Opening Protocol · §6.0 Principio de Herramienta Mínima Necesaria · fallback PowerShell local guiado · acceso Vercel corregido · Terminal/CMD acceso corregido · tabla resumen actualizada · Sección 9: pendientes estratégicos futuros registrados · checklist ítem 9 |
 
 ---
 
-*ByRousOS · TOOLS_AND_ENVIRONMENT v4.2 · 2026-05-13 · commit 36c9be1 · Confidencial*
+*ByRousOS · TOOLS_AND_ENVIRONMENT v4.3 · 2026-05-13 · Confidencial*
 *Este documento no se modifica sin aprobación del CEO. Es una regla de gobierno, no una preferencia operacional.*
