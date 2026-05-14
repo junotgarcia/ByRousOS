@@ -4,7 +4,7 @@
 
 **Versión:** v4.2  
 **Fecha:** 2026-05-13  
-**Commit de referencia:** pendiente de publicación  
+**Commit de referencia:** b7b24fb  
 **Estado:** Gobierno constitucional vigente · Fase 1 cerrada · Fase 2 pendiente de apertura formal  
 **CONFIDENCIAL**
 
@@ -511,7 +511,7 @@ Eso requiere criterios técnicos verificables, sandbox, auditoría, rollback, es
 | v2.0 | Mayo 2026 | — | Criterios de Operational Readiness Gate añadidos |
 | v3.0 | Mayo 2026 | — | Resumen ejecutivo para CEO · Separación construcción/operación explícita |
 | v4.0 | 2026-05-12 | — | Sección Document Governance Model añadida · Ownership table · Reglas de modificación · Authority flow · GitHub como fuente de verdad |
-| v4.2 | 2026-05-13 | pendiente | Versión Markdown oficial para repo · Document Governance Model refinado · versionado actualizado · cybersecurity capability · command handoff layer · model provider layer · guided tool-opening protocol |
+| v4.2 | 2026-05-13 | 7b24fb | Versión Markdown oficial para repo · Document Governance Model refinado · versionado actualizado · cybersecurity capability · command handoff layer · model provider layer · guided tool-opening protocol |
 
 ---
 

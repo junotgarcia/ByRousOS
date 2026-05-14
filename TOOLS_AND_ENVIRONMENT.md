@@ -2,7 +2,7 @@
 **ChatOperador — Awareness Operacional Permanente**
 **Versión:** v4.3
 **Fecha:** 2026-05-13
-**Commit:** pendiente
+**Commit:** 14d54f8
 **Estado:** 🔴 LECTURA OBLIGATORIA al inicio de cada sesión
 
 ---
@@ -461,7 +461,7 @@ Registrados como futuros. NO activos. NO modifican fase actual.
 | v12.05.26-12pm | 2026-05-12 | — | Versión inicial — herramientas, entornos, reglas operacionales |
 | v12.05.26-4pm | 2026-05-12 | `76efb42` | VS Code Tunnel `byrousos` · workflow completo · sintaxis PS · limitación localhost |
 | v4.2 | 2026-05-13 | `36c9be1` | Sección 1.9 añadida: Vercel operativo · lección encoding PowerShell → UTF-16 bug · node script como método oficial · Sección 3.5 regla encoding · Sección 3.6 localhost · flujo via node script añadido · checklist actualizado · tabla resumen actualizada |
-| v4.3 | 2026-05-13 | pendiente | Sección 6 añadida: Guided Tool-Opening Protocol · §6.0 Principio de Herramienta Mínima Necesaria · fallback PowerShell local guiado · acceso Vercel corregido · Terminal/CMD acceso corregido · tabla resumen actualizada · Sección 9: pendientes estratégicos futuros registrados · checklist ítem 9 |
+| v4.3 | 2026-05-13 | 14d54f8 | Sección 6 añadida: Guided Tool-Opening Protocol · §6.0 Principio de Herramienta Mínima Necesaria · fallback PowerShell local guiado · acceso Vercel corregido · Terminal/CMD acceso corregido · tabla resumen actualizada · Sección 9: pendientes estratégicos futuros registrados · checklist ítem 9 |
 
 ---
 

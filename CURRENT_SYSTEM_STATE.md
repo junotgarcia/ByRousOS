@@ -2,7 +2,7 @@
 
 **Versión:** v4.2  
 **Fecha:** 2026-05-13  
-**Commit de referencia:** b31ab5d  
+**Commit de referencia:** c57d318  
 **Estado:** 🟡 CONSTRUCCIÓN — Fase 1 cerrada · Fase 2 pendiente de apertura formal · Sin operaciones comerciales
 
 ---
