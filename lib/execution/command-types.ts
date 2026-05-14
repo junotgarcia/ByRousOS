@@ -3,29 +3,31 @@
 
 export type AutonomyLevel = 'A' | 'B' | 'C' | 'D'
 
+// Aligned to os.execution_status ENUM in schema
 export type CommandStatus =
   | 'pending'
-  | 'approved'
-  | 'blocked'
-  | 'executing'
-  | 'executed'
+  | 'queued'
+  | 'running'
+  | 'completed'
   | 'failed'
+  | 'rolled_back'
   | 'cancelled'
 
 export interface CommandRecord {
   id: string
   agent_id: string | null
-  type: string
+  command_type: string
+  target_entity: string
   payload: Record<string, unknown>
   autonomy_level: AutonomyLevel
   confidence_score: number
+  risk_level: string
   governance_passed: boolean | null
   status: CommandStatus
+  agent_code: string
   created_at: string
   updated_at: string
-  executed_at: string | null
-  error_message: string | null
-  correlation_id: string | null
+  audit_log_id: string | null
 }
 
 export interface CreateCommandInput {

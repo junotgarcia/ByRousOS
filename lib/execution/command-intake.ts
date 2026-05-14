@@ -33,13 +33,16 @@ export function classifyAutonomyLevel(
 // ---------------------------------------------------------------------------
 // Governance Decision
 // ---------------------------------------------------------------------------
+// Maps autonomy level to real os.execution_status enum values:
+// A/B → 'queued' (governance passed, awaiting execution)
+// C/D → 'cancelled' (governance blocked — requires CEO approval)
 function applyGovernance(
   level: AutonomyLevel
 ): { governance_passed: boolean; status: CommandStatus } {
   if (level === 'D' || level === 'C') {
-    return { governance_passed: false, status: 'blocked' }
+    return { governance_passed: false, status: 'cancelled' }
   }
-  return { governance_passed: true, status: 'approved' }
+  return { governance_passed: true, status: 'queued' }
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +58,6 @@ export async function intakeCommand(
   const { governance_passed, status } = applyGovernance(autonomy_level)
 
   // 1. Write audit_log BEFORE inserting command (governance: logs before actions)
-  // command_id included in audit_log for full traceability audit_log <-> os.commands
   let audit_log_id: string | null = null
   try {
     const auditRows = await sql`
